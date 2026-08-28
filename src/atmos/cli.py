@@ -140,6 +140,14 @@ def ingest(
         typer.echo(f"no manifest.json in {path}", err=True)
         raise typer.Exit(2)
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    # A backfill run holds archive files in the source's own format, not the
+    # shape the live parser expects, so the connector parses them differently.
+    is_backfill = manifest.get("mode") == "backfill"
+    parse_one = getattr(conn_impl, "parse_archive", None) if is_backfill else None
+    stations_of = getattr(conn_impl, "archive_stations", None) if is_backfill else None
+    if is_backfill and (parse_one is None or stations_of is None):
+        typer.echo(f"{connector} cannot read its own archive format", err=True)
+        raise typer.Exit(2)
 
     totals = ing.IngestResult()
     started = datetime.now(UTC)
@@ -169,11 +177,12 @@ def ingest(
                 fetch_id = ing.record_fetch(cur, source_id, res, "bytes", stored)
 
                 try:
+                    found = (stations_of or conn_impl.stations)(blob, t)
                     stations = {
                         s.source_station_id: ing.upsert_station(cur, source_id, s)
-                        for s in conn_impl.stations(blob, t)
+                        for s in found
                     }
-                    observations = conn_impl.parse(blob, t)
+                    observations = (parse_one or conn_impl.parse)(blob, t)
                 except Exception as e:  # noqa: BLE001
                     # Recoverable: the bytes are archived, so a fixed parser can
                     # be re-run over them. Record it as work to do.
@@ -186,7 +195,8 @@ def ingest(
                     continue
 
                 r = ing.ingest_observations(cur, stations, params, fetch_id,
-                                            conn_impl.parser_version, observations)
+                                            conn_impl.parser_version, observations,
+                                            is_backfill=is_backfill)
                 totals.inserted += r.inserted
                 totals.confirmed += r.confirmed
                 totals.revisions += r.revisions
@@ -194,7 +204,7 @@ def ingest(
                 # Only meaningful when the fetch reprinted a whole window. On a
                 # snapshot feed a reading being absent says nothing at all.
                 withdrawn = 0
-                if meta.republishes_window and observations:
+                if meta.republishes_window and observations and not is_backfill:
                     withdrawn = ing.withdraw_absent(
                         cur, stations, params, fetch_id,
                         conn_impl.parser_version, observations)
@@ -223,6 +233,105 @@ def ingest(
         typer.echo(f"{flagged} reading(s) flagged as implausible")
 
     typer.echo(f"{totals}")
+
+
+@app.command()
+def backfill(
+    days: int = typer.Option(30, "--days", "-d", help="How far back to walk"),
+    out: pathlib.Path = typer.Option(pathlib.Path("archive"), "--out", "-o"),
+    min_interval: float = typer.Option(2.0, "--min-interval"),
+    give_up_after: int = typer.Option(30, "--give-up-after",
+                                      help="Consecutive missing days before a sensor is dropped"),
+) -> None:
+    """Pull historical Sensor.Community data from its daily archive.
+
+    The only source where history can be fetched rather than waited for. One file
+    per sensor per day, roughly 40 KB, back to 2015.
+
+    A 404 means that sensor published nothing that day, which is ordinary. After
+    enough consecutive misses the sensor is assumed not to have existed yet and is
+    dropped, so we do not walk a 2025 sensor back to 2015 for nothing.
+    """
+    from datetime import date, timedelta
+
+    from atmos.connectors.sensorcommunity import SensorCommunityConnector
+    from atmos.core.fetch import Fetcher
+
+    conn = SensorCommunityConnector()
+    dest = out / conn.slug / "archive"
+    dest.mkdir(parents=True, exist_ok=True)
+
+    # Which sensors exist, and of what type, comes from the live API. The archive
+    # has no index we can rely on: its day listings are 4.6 MB and flaky.
+    sensors: dict[str, str] = {}
+    with Fetcher(min_interval_s=min_interval) as f:
+        for t in conn.targets():
+            res = f.fetch(t)
+            if not res.ok:
+                continue
+            import json as _json
+
+            for rec in _json.loads(res.body.decode("utf-8")):
+                loc = rec.get("location") or {}
+                if loc.get("country") != "BA":
+                    continue
+                sensors[str(rec["sensor"]["id"])] = rec["sensor"]["sensor_type"]["name"]
+
+    typer.echo(f"{len(sensors)} sensors in Bosnia and Herzegovina")
+
+
+    today = date.today()
+    records, fetched, missing, skipped = [], 0, 0, 0
+
+    with Fetcher(min_interval_s=min_interval) as f:
+        for sensor_id, sensor_type in sorted(sensors.items(), key=lambda x: int(x[0])):
+            consecutive_misses = 0
+            got = 0
+            for back in range(1, days + 1):
+                day = today - timedelta(days=back)
+                target = conn.archive_target(sensor_id, sensor_type, day)
+                path = dest / f"{target.id}.csv"
+
+                if path.exists():
+                    skipped += 1
+                    consecutive_misses = 0
+                    continue
+
+                res = f.fetch(target)
+                if res.http_status == 404:
+                    missing += 1
+                    consecutive_misses += 1
+                    if consecutive_misses >= give_up_after:
+                        break
+                    continue
+                if not res.ok:
+                    consecutive_misses += 1
+                    continue
+
+                path.write_bytes(res.body)
+                rec = res.as_record()
+                rec["stored_as"] = path.name
+                rec["sensor_type"] = sensor_type
+                records.append(rec)
+                fetched += 1
+                got += 1
+                consecutive_misses = 0
+
+            typer.echo(f"  sensor {sensor_id:>6} {sensor_type:8s} {got:4d} day(s)")
+
+    manifest = {
+        "connector": conn.slug,
+        "parser_version": conn.parser_version,
+        "mode": "backfill",
+        "run_started": datetime.now(UTC).isoformat(),
+        "targets": len(records),
+        "ok": fetched,
+        "fetches": records,
+    }
+    (dest / "manifest.json").write_text(json.dumps(manifest, indent=1), encoding="utf-8")
+    typer.echo(
+        f"fetched {fetched}, already held {skipped}, absent {missing} -> {dest}"
+    )
 
 
 if __name__ == "__main__":

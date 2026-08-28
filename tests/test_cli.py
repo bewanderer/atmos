@@ -119,3 +119,85 @@ def test_ingest_loads_an_archive_and_is_idempotent(archived_run: Path) -> None:
                                  "--path", str(archived_run), "--dsn", DSN])
     assert second.exit_code == 0, second.output
     assert "0 new" in second.output, "re-ingesting must confirm, not duplicate"
+
+
+@pytest.fixture
+def backfill_run(tmp_path: Path) -> Path:
+    """An archive directory shaped like a real backfill run."""
+    run = tmp_path / "sensorcommunity" / "archive"
+    run.mkdir(parents=True)
+    src = FIXTURES / "sensorcommunity"
+    files = [
+        ("74725-2026-08-26", "archive_sds011_84500.csv"),
+        ("70385-2026-08-26", "archive_bme280_80927.csv"),
+    ]
+    fetches = []
+    for target_id, name in files:
+        shutil.copy(src / name, run / f"{target_id}.csv")
+        body = (run / f"{target_id}.csv").read_bytes()
+        fetches.append({
+            "target_id": target_id,
+            "url": f"https://archive.sensor.community/2026-08-26/{name}",
+            "requested_at": datetime.now(UTC).isoformat(),
+            "http_status": 200,
+            "content_sha256": "cd" * 32,
+            "content_bytes": len(body),
+            "duration_ms": 90,
+            "ok": True,
+            "error": None,
+            "stored_as": f"{target_id}.csv",
+        })
+    (run / "manifest.json").write_text(json.dumps({
+        "connector": "sensorcommunity",
+        "parser_version": "sensorcommunity-1",
+        "mode": "backfill",
+        "run_started": datetime.now(UTC).isoformat(),
+        "targets": len(fetches), "ok": len(fetches), "fetches": fetches,
+    }), encoding="utf-8")
+    return run
+
+
+@pytest.mark.skipif(not DSN, reason="ATMOS_TEST_DSN not set")
+def test_ingest_reads_backfill_archives(backfill_run: Path) -> None:
+    """Backfill files are CSV, not the JSON the live parser expects."""
+    result = runner.invoke(app, ["ingest", "--connector", "sensorcommunity",
+                                 "--path", str(backfill_run), "--dsn", DSN])
+    assert result.exit_code == 0, result.output
+    assert "parse failed" not in result.output
+    assert "new" in result.output
+
+
+@pytest.mark.skipif(not DSN, reason="ATMOS_TEST_DSN not set")
+def test_backfilled_rows_are_marked_as_such(backfill_run: Path) -> None:
+    """So historical loads are never confused with what we watched happen live."""
+    import psycopg
+
+    runner.invoke(app, ["ingest", "--connector", "sensorcommunity",
+                        "--path", str(backfill_run), "--dsn", DSN])
+    with psycopg.connect(DSN) as conn:
+        cur = conn.cursor()
+        cur.execute("""
+            select count(*) filter (where is_backfill),
+                   count(*) filter (where not is_backfill)
+              from observations o
+              join stations st on st.id = o.station_id
+              join sources s on s.id = st.source_id
+             where s.slug = 'sensorcommunity'
+               and o.phenomenon_start::date = date '2026-08-26'
+        """)
+        backfilled, live = cur.fetchone()
+    assert backfilled > 0
+    assert live == 0
+
+
+def test_backfill_rejects_a_connector_without_an_archive(tmp_path: Path) -> None:
+    """FHMZ has no archive format, so a backfill manifest must be refused."""
+    run = tmp_path / "run"
+    run.mkdir()
+    (run / "manifest.json").write_text(json.dumps({
+        "connector": "fhmz", "mode": "backfill", "fetches": [],
+    }), encoding="utf-8")
+    result = runner.invoke(app, ["ingest", "--connector", "fhmz",
+                                 "--path", str(run), "--dsn", "postgres://x"])
+    assert result.exit_code == 2
+    assert "archive format" in result.output

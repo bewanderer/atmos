@@ -27,7 +27,7 @@ complete per sensor files back to 2015 and is handled as backfill, separately.
 from __future__ import annotations
 
 import json
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime
 from decimal import Decimal, InvalidOperation
 from typing import Any
 
@@ -68,7 +68,17 @@ PARAMETERS: dict[str, tuple[str, str]] = {
 
 # pressure_at_sealevel is computed by the source from pressure and altitude.
 # We keep the measurement and derive that ourselves if it is ever wanted.
-IGNORED = {"pressure_at_sealevel"}
+# The archive CSVs add sensor diagnostics and a repeated altitude column.
+IGNORED = {
+    "pressure_at_sealevel",
+    "durP1", "ratioP1", "durP2", "ratioP2",
+    "altitude",
+}
+
+ARCHIVE = "https://archive.sensor.community"
+
+# Columns every archive CSV starts with, before the type specific ones.
+ARCHIVE_PREFIX = ("sensor_id", "sensor_type", "location", "lat", "lon", "timestamp")
 
 
 def _to_decimal(value: object) -> Decimal | None:
@@ -191,6 +201,107 @@ class SensorCommunityConnector:
         if not isinstance(payload, list):
             raise ParseError("expected a JSON array", target_id=target.id, snippet=raw[:500])
         return payload
+
+    def archive_target(self, sensor_id: str, sensor_type: str, day: date) -> FetchTarget:
+        """One sensor for one day. About 40 KB.
+
+        Built by hand rather than read from the day listing: the listing is 4.6 MB
+        and fails intermittently, while individual files are reliable.
+        """
+        stamp = day.isoformat()
+        name = f"{stamp}_{sensor_type.lower()}_sensor_{sensor_id}.csv"
+        return FetchTarget(id=f"{sensor_id}-{stamp}", url=f"{ARCHIVE}/{stamp}/{name}",
+                           station_hint=sensor_id)
+
+    def parse_archive(self, raw: bytes, target: FetchTarget) -> list[ParsedObservation]:
+        """Parse one archived sensor day.
+
+        Semicolon separated, columns read from the header because they differ by
+        sensor type: SDS011 carries P1 and P2, DHT22 temperature and humidity,
+        BME280 those plus pressure.
+        """
+        text = raw.decode("utf-8", errors="replace")
+        lines = [ln for ln in text.splitlines() if ln.strip()]
+        if not lines:
+            return []
+
+        header = lines[0].split(";")
+        if tuple(header[: len(ARCHIVE_PREFIX)]) != ARCHIVE_PREFIX:
+            raise ParseError("unexpected archive header", target_id=target.id,
+                             snippet=lines[0].encode()[:200])
+
+        idx = {name: i for i, name in enumerate(header)}
+        out: list[ParsedObservation] = []
+
+        for line in lines[1:]:
+            row = line.split(";")
+            if len(row) != len(header):
+                continue
+            when = self._archive_timestamp(row[idx["timestamp"]])
+            if when is None:
+                continue
+            station = row[idx["location"]].strip()
+
+            for name, i in idx.items():
+                if name in ARCHIVE_PREFIX or name in IGNORED or name not in PARAMETERS:
+                    continue
+                code, unit = PARAMETERS[name]
+                value = _to_decimal(row[i])
+                if value is None:
+                    continue
+                out.append(
+                    ParsedObservation(
+                        source_station_id=station,
+                        parameter_code=code,
+                        phenomenon_start=when,
+                        phenomenon_end=when,
+                        value=value,
+                        unit=unit,
+                        raw_value=row[i].strip(),
+                        raw_unit=unit,
+                    )
+                )
+        return out
+
+    def archive_stations(self, raw: bytes, target: FetchTarget) -> list[ParsedStation]:
+        """Station metadata from an archive CSV. It carries lat and lon per row."""
+        text = raw.decode("utf-8", errors="replace")
+        lines = [ln for ln in text.splitlines() if ln.strip()]
+        if len(lines) < 2:
+            return []
+        header = lines[0].split(";")
+        idx = {name: i for i, name in enumerate(header)}
+        row = lines[1].split(";")
+        if len(row) != len(header):
+            return []
+
+        lat, lon = _to_decimal(row[idx["lat"]]), _to_decimal(row[idx["lon"]])
+        declared = tuple(
+            dict.fromkeys(
+                PARAMETERS[n][0] for n in header
+                if n in PARAMETERS and n not in IGNORED
+            )
+        )
+        station = row[idx["location"]].strip()
+        return [
+            ParsedStation(
+                source_station_id=station,
+                name=f"Sensor.Community {station}",
+                latitude=float(lat) if lat is not None else None,
+                longitude=float(lon) if lon is not None else None,
+                # The archive rounds coordinates the same way the feed does.
+                location_precise=False,
+                declared_parameters=declared,
+            )
+        ]
+
+    @staticmethod
+    def _archive_timestamp(value: str) -> datetime | None:
+        """Archive stamps read YYYY-MM-DDTHH:MM:SS and are UTC, like the feed."""
+        try:
+            return datetime.fromisoformat(value.strip()).replace(tzinfo=UTC)
+        except ValueError:
+            return None
 
     @staticmethod
     def _timestamp(value: object) -> datetime | None:
