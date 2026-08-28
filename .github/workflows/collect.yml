@@ -1,36 +1,55 @@
 name: collect
 
-# Sources discard their data. FHMZ keeps a rolling six day window and Tuzla
-# Canton about 48 hours, so an hour not collected is lost for everyone. This
-# workflow only fetches and archives bytes. Parsing happens later, from the
-# archive, and can be redone as often as we like.
+# Sources discard their data. FHMZ keeps about six days, Tuzla Canton about 48
+# hours, and the RHMZ RS feed holds only the current hour. An hour not fetched
+# is lost for everyone. This workflow only fetches and archives bytes. Parsing
+# happens later, from the archive, and can be redone as often as we like.
 
 on:
   schedule:
-    # Every three hours. Tuzla keeps only about 48 hours, so this leaves room
-    # to miss several runs and still lose nothing.
-    - cron: "7 */3 * * *"
+    # RHMZ RS holds one hour at a time, so it has to be hourly.
+    - cron: "7 * * * *"
+    # The HTML sources keep days, so three hours leaves plenty of margin.
+    - cron: "13 */3 * * *"
   workflow_dispatch:
     inputs:
-      connector:
-        description: Connector slug to run
-        default: fhmz
+      connectors:
+        description: JSON array of connector slugs
+        default: '["fhmz","tuzla","rhmzrs"]'
 
 permissions:
-  contents: write  # needed to create releases and upload assets
+  contents: write
 
 concurrency:
-  group: collect-${{ github.workflow }}
+  group: collect
   cancel-in-progress: false  # never kill a run mid-fetch
 
 jobs:
+  plan:
+    runs-on: ubuntu-latest
+    outputs:
+      connectors: ${{ steps.pick.outputs.connectors }}
+    steps:
+      - id: pick
+        run: |
+          if [ -n "${{ github.event.inputs.connectors }}" ]; then
+            LIST='${{ github.event.inputs.connectors }}'
+          elif [ "${{ github.event.schedule }}" = "13 */3 * * *" ]; then
+            LIST='["fhmz","tuzla"]'
+          else
+            LIST='["rhmzrs"]'
+          fi
+          echo "connectors=$LIST" >> "$GITHUB_OUTPUT"
+          echo "running: $LIST"
+
   collect:
+    needs: plan
     runs-on: ubuntu-latest
     timeout-minutes: 30
     strategy:
       fail-fast: false  # one dead source must not stop the others
       matrix:
-        connector: [fhmz, tuzla]
+        connector: ${{ fromJson(needs.plan.outputs.connectors) }}
 
     steps:
       - uses: actions/checkout@v4
@@ -54,8 +73,8 @@ jobs:
           tar -czf "${{ matrix.connector }}-${{ steps.collect.outputs.stamp }}.tar.gz" archive
           ls -lh ./*.tar.gz
 
-      # One release per month, assets appended to it. Release assets do not
-      # count against repository size, so this is durable free storage.
+      # One release per month, assets appended. Release assets do not count
+      # against repository size, so this is durable free storage.
       - name: Upload to monthly archive release
         env:
           GH_TOKEN: ${{ github.token }}
@@ -69,8 +88,8 @@ jobs:
           fi
           gh release upload "$TAG" ./*.tar.gz --clobber
 
-      # A silent failure is worse than a loud one. If a source stops returning
-      # anything, the collect step exits non-zero and this makes it visible.
+      # A source going quiet should be loud. collect exits non-zero when nothing
+      # succeeds, and this puts the counts on the run summary either way.
       - name: Summary
         if: always()
         run: |
