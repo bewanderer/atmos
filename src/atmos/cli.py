@@ -11,6 +11,7 @@ import typer
 from atmos.connectors.base import Connector
 from atmos.connectors.fhmz import FhmzConnector
 from atmos.connectors.rhmzrs import RhmzRsConnector
+from atmos.connectors.sensorcommunity import SensorCommunityConnector
 from atmos.connectors.tuzla import TuzlaConnector
 from atmos.core.fetch import Fetcher
 
@@ -20,6 +21,7 @@ CONNECTORS: dict[str, Connector] = {
     "fhmz": FhmzConnector(),
     "tuzla": TuzlaConnector(),
     "rhmzrs": RhmzRsConnector(),
+    "sensorcommunity": SensorCommunityConnector(),
 }
 
 

@@ -53,6 +53,9 @@ class ParsedStation:
     area_type: str = "unknown"
     is_indoor: bool = False
     is_mobile: bool = False
+    # False when the source rounds coordinates for privacy, which matters when
+    # matching stations to each other by distance.
+    location_precise: bool = True
     # What the page declares, even if it delivered nothing. Without this we
     # cannot tell a broken station from one that never existed.
     declared_parameters: tuple[str, ...] = ()
