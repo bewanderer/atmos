@@ -7,9 +7,9 @@ name: collect
 
 on:
   schedule:
-    # Every six hours. Enough redundancy against a six day window, and enough
-    # resolution to notice when a source amends a value it already published.
-    - cron: "7 */6 * * *"
+    # Every three hours. Tuzla keeps only about 48 hours, so this leaves room
+    # to miss several runs and still lose nothing.
+    - cron: "7 */3 * * *"
   workflow_dispatch:
     inputs:
       connector:
@@ -30,7 +30,7 @@ jobs:
     strategy:
       fail-fast: false  # one dead source must not stop the others
       matrix:
-        connector: [fhmz]
+        connector: [fhmz, tuzla]
 
     steps:
       - uses: actions/checkout@v4

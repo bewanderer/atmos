@@ -10,12 +10,14 @@ import typer
 
 from atmos.connectors.base import Connector
 from atmos.connectors.fhmz import FhmzConnector
+from atmos.connectors.tuzla import TuzlaConnector
 from atmos.core.fetch import Fetcher
 
 app = typer.Typer(add_completion=False, help="Atmos collector")
 
 CONNECTORS: dict[str, Connector] = {
     "fhmz": FhmzConnector(),
+    "tuzla": TuzlaConnector(),
 }
 
 
