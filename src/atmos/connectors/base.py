@@ -69,6 +69,9 @@ class SourceMetadata:
     base_url: str
     attribution: str
     is_primary: bool
+    # IANA name of the timezone the source publishes in. Display is always
+    # Europe/Sarajevo; this is kept so the original can be shown alongside.
+    timezone: str = "Europe/Sarajevo"
     license: str | None = None
     license_url: str | None = None
     terms_url: str | None = None

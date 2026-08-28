@@ -37,8 +37,8 @@ from atmos.connectors.base import (
     SourceMetadata,
 )
 
-# Hour labels on the page are local wall clock, with no timezone stated anywhere.
-LOCAL_TZ = ZoneInfo("Europe/Sarajevo")
+# FHMZ publishes in local time.
+SOURCE_TZ = ZoneInfo("Europe/Sarajevo")
 
 # Page name -> station name, from the links on AQI-satne.php.
 # Use discover_stations() to refresh. The site disagrees with itself on how
@@ -140,6 +140,7 @@ class FhmzConnector:
             base_url="https://www.fhmzbih.gov.ba/",
             attribution="Federalni hidrometeoroloski zavod BiH (fhmzbih.gov.ba)",
             is_primary=True,
+            timezone="Europe/Sarajevo",
             archive_mode="bytes",
             notes=(
                 "Rolling 6 day window, nothing older published. Operator states data is "
@@ -295,7 +296,7 @@ class FhmzConnector:
             if value is None:
                 continue
 
-            start = datetime(year, month, day, hour, tzinfo=LOCAL_TZ)
+            start = datetime(year, month, day, hour, tzinfo=SOURCE_TZ)
             flags: list[str] = []
             # The date came from a sibling table, not this one. True for NOx.
             if inferred:
