@@ -29,6 +29,7 @@ from __future__ import annotations
 import json
 from datetime import UTC, datetime
 from decimal import Decimal, InvalidOperation
+from typing import Any
 
 from atmos.connectors.base import (
     Connector,
@@ -181,7 +182,7 @@ class SensorCommunityConnector:
         return out
 
     @staticmethod
-    def _records(raw: bytes, target: FetchTarget) -> list[dict]:
+    def _records(raw: bytes, target: FetchTarget) -> list[dict[str, Any]]:
         try:
             payload = json.loads(raw.decode("utf-8"))
         except (UnicodeDecodeError, json.JSONDecodeError) as e:

@@ -20,10 +20,6 @@ on:
 permissions:
   contents: write
 
-concurrency:
-  group: collect
-  cancel-in-progress: false  # never kill a run mid-fetch
-
 jobs:
   plan:
     runs-on: ubuntu-latest
@@ -35,7 +31,7 @@ jobs:
           if [ -n "${{ github.event.inputs.connectors }}" ]; then
             LIST='${{ github.event.inputs.connectors }}'
           elif [ "${{ github.event.schedule }}" = "13 */3 * * *" ]; then
-            LIST='["fhmz","tuzla"]'
+            LIST='["fhmz","tuzla","sensorcommunity"]'
           else
             LIST='["rhmzrs"]'
           fi
@@ -46,6 +42,11 @@ jobs:
     needs: plan
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    # Per connector, so the hourly RHMZ run is never queued behind a slower one
+    # and dropped. Never cancel: a half finished fetch loses data.
+    concurrency:
+      group: collect-${{ matrix.connector }}
+      cancel-in-progress: false
     strategy:
       fail-fast: false  # one dead source must not stop the others
       matrix:

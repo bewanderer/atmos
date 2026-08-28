@@ -8,7 +8,7 @@ from datetime import UTC, datetime
 
 import typer
 
-from atmos.connectors.base import Connector
+from atmos.connectors.base import Connector, FetchTarget
 from atmos.connectors.fhmz import FhmzConnector
 from atmos.connectors.rhmzrs import RhmzRsConnector
 from atmos.connectors.sensorcommunity import SensorCommunityConnector
@@ -92,7 +92,7 @@ def parse(
         typer.echo(f"unknown connector: {connector}", err=True)
         raise typer.Exit(2)
 
-    from atmos.connectors.base import FetchTarget, ParseError
+    from atmos.connectors.base import ParseError
 
     total = 0
     for f in sorted(path.glob("*.html")):
@@ -109,6 +109,120 @@ def parse(
             f"last={last.date() if last else '-'}"
         )
     typer.echo(f"\ntotal observations: {total}")
+
+
+@app.command()
+def ingest(
+    connector: str = typer.Option(..., "--connector", "-c"),
+    path: pathlib.Path = typer.Option(..., "--path", "-p", help="An archived run directory"),
+    dsn: str = typer.Option(None, "--dsn", envvar="ATMOS_DATABASE_URL"),
+) -> None:
+    """Load an archived run into Postgres.
+
+    Safe to re-run. A reading already held is confirmed, not duplicated, and a
+    changed one is appended as a new revision. Nothing is ever overwritten.
+    """
+    import psycopg
+
+    from atmos.core import ingest as ing
+    from atmos.core.fetch import FetchResult
+
+    conn_impl = CONNECTORS.get(connector)
+    if conn_impl is None:
+        typer.echo(f"unknown connector: {connector}", err=True)
+        raise typer.Exit(2)
+    if not dsn:
+        typer.echo("no database DSN, set ATMOS_DATABASE_URL", err=True)
+        raise typer.Exit(2)
+
+    manifest_path = path / "manifest.json"
+    if not manifest_path.exists():
+        typer.echo(f"no manifest.json in {path}", err=True)
+        raise typer.Exit(2)
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+
+    totals = ing.IngestResult()
+    started = datetime.now(UTC)
+    flagged = 0
+    with psycopg.connect(dsn) as db:
+        with db.cursor() as cur:
+            source_id = ing.upsert_source(cur, conn_impl)
+            params = ing.parameter_ids(cur)
+            meta = conn_impl.metadata()
+
+            for rec in manifest["fetches"]:
+                stored = rec.get("stored_as")
+                if not rec.get("ok") or not stored:
+                    continue
+                blob = (path / stored).read_bytes()
+                t = FetchTarget(id=rec["target_id"], url=rec["url"],
+                                station_hint=rec["target_id"].rsplit("-", 1)[0])
+
+                res = FetchResult(
+                    target_id=rec["target_id"], url=rec["url"],
+                    requested_at=datetime.fromisoformat(rec["requested_at"]),
+                    http_status=rec.get("http_status"), body=b"",
+                    sha256=rec.get("content_sha256") or "",
+                    content_bytes=rec.get("content_bytes") or len(blob),
+                    duration_ms=rec.get("duration_ms") or 0, ok=True,
+                )
+                fetch_id = ing.record_fetch(cur, source_id, res, "bytes", stored)
+
+                try:
+                    stations = {
+                        s.source_station_id: ing.upsert_station(cur, source_id, s)
+                        for s in conn_impl.stations(blob, t)
+                    }
+                    observations = conn_impl.parse(blob, t)
+                except Exception as e:  # noqa: BLE001
+                    # Recoverable: the bytes are archived, so a fixed parser can
+                    # be re-run over them. Record it as work to do.
+                    cur.execute(
+                        """insert into parse_failures
+                             (fetch_id, parser_version, error) values (%s,%s,%s)""",
+                        (fetch_id, conn_impl.parser_version, f"{type(e).__name__}: {e}"),
+                    )
+                    typer.echo(f"  {rec['target_id']}: parse failed, {e}")
+                    continue
+
+                r = ing.ingest_observations(cur, stations, params, fetch_id,
+                                            conn_impl.parser_version, observations)
+                totals.inserted += r.inserted
+                totals.confirmed += r.confirmed
+                totals.revisions += r.revisions
+
+                # Only meaningful when the fetch reprinted a whole window. On a
+                # snapshot feed a reading being absent says nothing at all.
+                withdrawn = 0
+                if meta.republishes_window and observations:
+                    withdrawn = ing.withdraw_absent(
+                        cur, stations, params, fetch_id,
+                        conn_impl.parser_version, observations)
+                    totals.withdrawn += withdrawn
+
+                extra = f", {withdrawn} withdrawn" if withdrawn else ""
+                typer.echo(f"  {rec['target_id']:24s} {r}{extra}")
+
+            cur.execute("select refresh_station_status()")
+            cur.execute("select apply_range_flags()")
+            row = cur.fetchone()
+            flagged = int(row[0]) if row and row[0] is not None else 0
+
+            cur.execute(
+                """insert into collector_runs
+                     (source_id, started_at, finished_at, targets_total, targets_ok,
+                      observations_inserted, revisions_inserted, ok)
+                   values (%s,%s,now(),%s,%s,%s,%s,%s)""",
+                (source_id, started, len(manifest["fetches"]),
+                 sum(1 for r in manifest["fetches"] if r.get("ok")),
+                 totals.inserted, totals.revisions, totals.inserted > 0 or totals.confirmed > 0),
+            )
+        db.commit()
+
+    if flagged:
+        typer.echo(f"{flagged} reading(s) flagged as implausible")
+
+    typer.echo(f"{totals}")
 
 
 if __name__ == "__main__":

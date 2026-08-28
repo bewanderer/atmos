@@ -8,7 +8,7 @@ from pathlib import Path
 import pytest
 
 from atmos.connectors.base import FetchTarget, ParseError
-from atmos.connectors.rhmzrs import STATIONS, SOURCE_TZ, RhmzRsConnector
+from atmos.connectors.rhmzrs import SOURCE_TZ, STATIONS, RhmzRsConnector
 
 FIXTURE = Path(__file__).parent / "fixtures" / "rhmzrs" / "EkoPodaci.json"
 

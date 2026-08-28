@@ -5,7 +5,7 @@ Parsers are pure functions over bytes, so these need no network and no database.
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from decimal import Decimal
 from pathlib import Path
 
@@ -59,8 +59,8 @@ def test_known_value_is_read_exactly(conn: FhmzConnector) -> None:
         o
         for o in obs
         if o.parameter_code == "pm10"
-        and o.phenomenon_start.astimezone(timezone.utc)
-        == datetime(2026, 8, 26, 22, 0, tzinfo=timezone.utc)
+        and o.phenomenon_start.astimezone(UTC)
+        == datetime(2026, 8, 26, 22, 0, tzinfo=UTC)
     ]
     assert len(hit) == 1
     assert hit[0].value == Decimal("6.42")
@@ -71,8 +71,8 @@ def test_local_time_is_converted_to_utc(conn: FhmzConnector) -> None:
     """August is CEST, UTC+2. Local 00:00 must land on 22:00 UTC the day before."""
     obs = conn.parse(load("amsVijecnica"), target("amsVijecnica"))
     o = min(obs, key=lambda x: x.phenomenon_start)
-    utc = o.phenomenon_start.astimezone(timezone.utc)
-    assert utc.utcoffset() == datetime.now(timezone.utc).utcoffset()
+    utc = o.phenomenon_start.astimezone(UTC)
+    assert utc.utcoffset() == datetime.now(UTC).utcoffset()
     assert o.phenomenon_start.utcoffset().total_seconds() == 7200
 
 

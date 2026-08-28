@@ -142,6 +142,7 @@ class FhmzConnector:
             is_primary=True,
             timezone="Europe/Sarajevo",
             archive_mode="bytes",
+            republishes_window=True,
             notes=(
                 "Rolling 6 day window, nothing older published. Operator states data is "
                 "unvalidated at publication and may be amended without notice, so "

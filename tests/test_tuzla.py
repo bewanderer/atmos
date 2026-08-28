@@ -14,7 +14,7 @@ import pytest
 
 from atmos.connectors.base import FetchTarget, ParseError
 from atmos.connectors.fhmz import FhmzConnector
-from atmos.connectors.tuzla import STATIONS, SOURCE_TZ, TuzlaConnector
+from atmos.connectors.tuzla import SOURCE_TZ, STATIONS, TuzlaConnector
 
 FIXTURES = Path(__file__).parent / "fixtures" / "tuzla"
 SNAPSHOTS = Path(__file__).parents[1] / "data" / "snapshots" / "fhmz" / "2026-08-28"

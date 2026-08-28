@@ -142,6 +142,7 @@ class TuzlaConnector:
             is_primary=True,
             timezone="Europe/Sarajevo",
             archive_mode="bytes",
+            republishes_window=True,
             notes=(
                 "About 48 hours of retention, today and yesterday only. Publishes CO in "
                 "mg/m3 where FHMZ uses ug/m3. Carries co-located meteorology per station."
@@ -279,5 +280,6 @@ class TuzlaConnector:
         return None
 
 
-def _check() -> Connector:
-    return TuzlaConnector()
+# Checked at import, like the other connectors, so a drift from the protocol
+# fails immediately rather than silently.
+_: Connector = TuzlaConnector()

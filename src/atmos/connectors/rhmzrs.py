@@ -23,6 +23,7 @@ from __future__ import annotations
 import json
 from datetime import datetime, timedelta
 from decimal import Decimal, InvalidOperation
+from typing import Any
 from zoneinfo import ZoneInfo
 
 from atmos.connectors.base import (
@@ -160,7 +161,7 @@ class RhmzRsConnector:
         return out
 
     @staticmethod
-    def _current(raw: bytes, target: FetchTarget) -> dict[str, dict]:
+    def _current(raw: bytes, target: FetchTarget) -> dict[str, dict[str, Any]]:
         try:
             payload = json.loads(raw.decode("utf-8"))
         except (UnicodeDecodeError, json.JSONDecodeError) as e:

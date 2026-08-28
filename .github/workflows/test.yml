@@ -1,0 +1,23 @@
+name: test
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install --quiet ".[dev]"
+      - name: Lint
+        run: ruff check src tests
+      - name: Types
+        run: mypy src/atmos
+      - name: Tests
+        # Database-backed tests skip without ATMOS_TEST_DSN. Parsers are pure
+        # functions over fixtures, so most of the suite needs nothing.
+        run: pytest -q

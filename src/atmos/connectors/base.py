@@ -79,6 +79,10 @@ class SourceMetadata:
     license_url: str | None = None
     terms_url: str | None = None
     archive_mode: str = "bytes"
+    # True when every fetch reprints a whole window, so a reading missing from it
+    # was genuinely withdrawn. False for snapshot feeds that only carry the newest
+    # hour, where absence means nothing.
+    republishes_window: bool = False
     notes: str | None = None
 
 
