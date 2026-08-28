@@ -1,0 +1,80 @@
+name: collect
+
+# Sources discard their data. FHMZ keeps a rolling six day window and Tuzla
+# Canton about 48 hours, so an hour not collected is lost for everyone. This
+# workflow only fetches and archives bytes. Parsing happens later, from the
+# archive, and can be redone as often as we like.
+
+on:
+  schedule:
+    # Every six hours. Enough redundancy against a six day window, and enough
+    # resolution to notice when a source amends a value it already published.
+    - cron: "7 */6 * * *"
+  workflow_dispatch:
+    inputs:
+      connector:
+        description: Connector slug to run
+        default: fhmz
+
+permissions:
+  contents: write  # needed to create releases and upload assets
+
+concurrency:
+  group: collect-${{ github.workflow }}
+  cancel-in-progress: false  # never kill a run mid-fetch
+
+jobs:
+  collect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false  # one dead source must not stop the others
+      matrix:
+        connector: [fhmz]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install
+        run: pip install --quiet .
+
+      - name: Collect
+        id: collect
+        run: |
+          python -m atmos.cli collect --connector "${{ matrix.connector }}" --out archive
+          echo "stamp=$(date -u +%Y-%m-%dT%H%M%SZ)" >> "$GITHUB_OUTPUT"
+          echo "month=$(date -u +%Y-%m)" >> "$GITHUB_OUTPUT"
+
+      - name: Package
+        run: |
+          tar -czf "${{ matrix.connector }}-${{ steps.collect.outputs.stamp }}.tar.gz" archive
+          ls -lh ./*.tar.gz
+
+      # One release per month, assets appended to it. Release assets do not
+      # count against repository size, so this is durable free storage.
+      - name: Upload to monthly archive release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG="archive-${{ steps.collect.outputs.month }}"
+          if ! gh release view "$TAG" >/dev/null 2>&1; then
+            gh release create "$TAG" \
+              --title "Raw archive ${{ steps.collect.outputs.month }}" \
+              --notes "Raw source responses as fetched, with a manifest recording URL, timestamp, HTTP status and SHA-256 per fetch. Unmodified." \
+              --latest=false
+          fi
+          gh release upload "$TAG" ./*.tar.gz --clobber
+
+      # A silent failure is worse than a loud one. If a source stops returning
+      # anything, the collect step exits non-zero and this makes it visible.
+      - name: Summary
+        if: always()
+        run: |
+          echo "### ${{ matrix.connector }} — ${{ steps.collect.outputs.stamp }}" >> "$GITHUB_STEP_SUMMARY"
+          find archive -name manifest.json -exec \
+            python -c "import json,sys; m=json.load(open(sys.argv[1])); print(f\"{m['ok']}/{m['targets']} targets ok\")" {} \; \
+            >> "$GITHUB_STEP_SUMMARY" 2>/dev/null || echo "no manifest produced" >> "$GITHUB_STEP_SUMMARY"
