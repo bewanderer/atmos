@@ -1,0 +1,2947 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta name="description" content="FEDERALNI HIDROMETEOROLOŠKI ZAVOD" />
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<title>Federalni hidrometeorološki zavod</title>
+    <!---------------------------------------------------------------------->
+<link rel="stylesheet" type="text/css" href="../css/styles-1.css" />
+<script type="text/javascript" src="../js/jquery-1.5.2.min.js"></script>
+<script type="text/javascript" src="../js/jquery.cycle.all.min.js"></script>
+<script type="text/javascript" src="../js/functions.js"></script>
+<script type="text/javascript" src="../KLIMA/monitoring/js/Chart.min.js" charset="utf-8" ></script>
+<script type="text/javascript" src="../KLIMA/monitoring/js/utils.js" charset="utf-8" ></script>
+
+<script>
+$(function(){
+      $("#heder").load("../heder.html"); 
+    });
+$(function(){
+      $("#gradovi").load("gradovi.htm"); 
+    });
+$(function(){
+      $("#footer").load("../footer.html"); 
+    });
+</script>
+ <script>
+ function city_show(thechose) 
+{
+      var gradovi = document.getElementsByTagName("div");
+            for(var y=0; y<gradovi.length; y++) 
+			{
+                  name = gradovi[y].className;
+                  if (name == 'gradovi') 
+				  {
+                  if (gradovi[y].id == thechose ) {gradovi[y].style.display="block" ;}
+                  else {gradovi[y].style.display="none";}
+            	  }
+            }
+}
+</script> 
+
+<style type="text/css">
+.listing {
+    display: inline-block;
+	font-size:12px;
+}
+
+.listing a { 
+    float: left;
+    padding: 2px 4px;
+    text-decoration: none;
+}
+
+.listing a.active {
+    background-color: #999;
+    color: white;
+    border-radius: 5px;
+}
+
+.listing a:hover:not(.active) {
+    background-color: #ddd;
+    border-radius: 5px;
+}
+
+tbody td:nth-of-type(odd),
+thead th:nth-of-type(odd){
+	background:#F2F2F2;
+   	border-bottom:thin dotted #003366; 
+   	
+   	padding-left:5px;
+}
+tbody td:nth-of-type(even){
+	background:#fff;
+   	border-bottom:thin dotted #003366; 
+   	
+   	padding-left:5px;
+}
+</style>
+<style>
+/* Use overflow:scroll on your container to enable scrolling: */
+
+.scrooltabela {
+  overflow-x:auto;
+  clear: both;
+  width: 100%;
+  border-collapse: collapse;
+  }
+.scrooltabela thead th {
+  position: -webkit-sticky; /* for Safari */
+  position: sticky;
+  left: 0;
+}
+
+.scrooltabela tbody th {
+  position: -webkit-sticky; /* for Safari */
+  position: sticky;
+  left: 0; 
+  color:#FFFFFF;
+}
+
+
+/* To have the header in the first column stick to the left: */
+
+.scrooltabela thead th:first-child {
+  left: 0;
+  z-index: 2;
+}
+
+
+/* Just to display it nicely: */
+
+.scrooltabela thead th {
+  background: #b6bec2;
+  color: #FFF;
+  /* Ensure this stays above the emulated border right in tbody th {}: */
+  z-index: 1;
+}
+
+.scrooltabela tbody th {
+  background: #b6bec2;
+  border-right: 1px solid #CCC;
+  /* Browsers tend to drop borders on sticky elements, so we emulate the border-right using a box-shadow to ensure it stays: */
+  box-shadow: 1px 0 0 0 #ccc;
+  text-align: center;
+}
+
+.scrooltabela td {
+  padding: 0.5em;
+  border: 1px solid #dddddd;
+  font-size:12px;
+  text-align: right;
+}
+.scrooltabela th {
+  padding: 0.5em;
+  border: 1px solid #dddddd;
+  font-size:12px;
+  text-align: center;
+}
+
+.scrooltabela td:nth-child(even) {
+  background-color: #f2f2f2;
+}
+.forma{
+		background: #E3F9F9;
+		padding:10px;
+		font:Arial, Helvetica, sans-serif 10px bolder ; 
+		color: #993300; 
+}
+.button{
+		font:Arial, Helvetica, sans-serif 10px bolder ; 
+		color: #993300; 
+}
+
+
+
+table.center {
+    margin-left:auto; 
+    margin-right:auto;
+  }
+</style>
+<style>
+#n {color:#000;}
+#gv{color:#FFCC00;font-weight:bold;}
+#u {color:#FFB7B7;font-weight:bold;}
+#pu{color:#990000;font-weight:bold;}
+</style>
+<style>
+#n {color:#000;}
+#gv{color:#FFCC00;font-weight:bold;}
+#u {color:#FF6600;font-weight:bold;}
+#pu{color:#990000;font-weight:bold;}
+</style>
+<style>
+.button {
+  background-image: linear-gradient(#f7f8fa ,#e7e9ec);
+  border-color: #adb1b8 #a2a6ac #8d9096;
+  border-style: solid;
+  border-width: 1px;
+  border-radius: 3px;
+  box-shadow: rgba(255,255,255,.6) 0 1px 0 inset;
+  box-sizing: border-box;
+  color: #0f1111;
+  cursor: pointer;
+  display: inline-block;
+  font-family: "Amazon Ember",Arial,sans-serif;
+  font-size: 14px;
+  height: 29px;
+  font-size: 13px;
+  outline: 0;
+  overflow: hidden;
+  padding: 0 11px;
+  text-align: center;
+  text-decoration: none;
+  text-overflow: ellipsis;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: manipulation;
+  white-space: nowrap;
+}
+
+.button:active {
+  border-bottom-color: #a2a6ac;
+}
+
+.button:active:hover {
+  border-bottom-color: #a2a6ac;
+}
+
+.button:hover {
+  border-color: #a2a6ac #979aa1 #82858a;
+}
+
+.button:focus {
+  border-color: #e77600;
+  box-shadow: rgba(228, 121, 17, .5) 0 0 3px 2px;
+  outline: 0;
+}
+</style>
+</head>
+
+
+<body>
+  
+
+
+
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+
+
+
+
+
+
+
+
+<div id="page">
+  <div id="container">
+  	<div id="heder"> </div>
+    <div id="content">
+	<div class="clearer"></div>
+	<div class="spacer"></div>
+	<div class="clearer"></div>
+      <div class="column-3-3" style="height:880px">
+        <div class="column-2-3">
+        <div class="white-box" style="height:830px">
+          <div class="box-title">&nbsp;pregled prikupljenih podataka sa mjernih stanica
+          	<div class="subtitle">&nbsp;Automatska mjerna stanica Tetovo - ZENICA</div>
+          </div>
+          <div class="box-content">
+            <!---->
+			<div class=" column-3-3">
+       		 
+      			<div class="box-content">
+                <p>OPERATOR STANICE: Općina Zenica<br />
+				izbor polutanta</p> 
+				<p align="center"> 
+				   <a id="myHeader1" href="javascript:city_show('gradovi10');"><button class="button" role="button">SO<sub>2</sub></button></a>
+				   <a id="myHeader1" href="javascript:city_show('gradovi30');"><button class="button" role="button">NO<sub>2</sub></button></a>
+				   <a id="myHeader1" href="javascript:city_show('gradovi40');"><button class="button" role="button">NO<sub>x</sub></button></a>
+				   <a id="myHeader1" href="javascript:city_show('gradovi50');"><button class="button" role="button">NO</button></a>
+				   <a id="myHeader1" href="javascript:city_show('gradovi60');"><button class="button" role="button">CO</button></a>
+				   <a id="myHeader1" href="javascript:city_show('gradovi70');"><button class="button" role="button">O<sub>3</sub></button></a>
+				   <a id="myHeader1" href="javascript:city_show('gradovi80');"><button class="button" role="button">PM<sub>10</sub></button></a>
+				   <a id="myHeader1" href="javascript:city_show('gradovi90');"><button class="button" role="button">PM<sub>2.5</sub></button></a>
+				</p>
+<hr />
+<p align="right" style="color:#003399; font-size:10px;">Podaci izraženi u µg/m<sup>3</sup></p>
+<!-------------------------------------------------------------------->
+  <div class="gradovi" id="gradovi10" style="display: block"> 
+	 
+<table width="45%">
+  		  <tr>
+    		<td colspan="3">
+			Broj prekoračenja satnih vrijednosti sumpordioksida (SO<sub>2</sub> &micro;g/m<sup>3</sup>) u periodu od  do  za:</td>
+  		  </tr>
+  		  <tr>
+    		<td width="40%">granična vrijednost</td>
+    		<td width="40%" align="center" id="gv">350</td>
+    		<td width="20%" align="center"><strong>0</strong></td>
+  		  </tr>
+  		  <tr>
+    		<td>prag upozorenja</td>
+    		<td align="center" id="u">365</td>
+    		<td align="center"><strong>0</strong></td>
+  		  </tr>
+  		  <tr>
+    		<td>prag uzbune</td>
+    		<td align="center" id="pu">500</td>
+    		<td align="center"><strong>0</strong></td>
+  		 </tr>
+		</table>
+<script>
+		
+			var graf1 = {
+			type: 'line',
+			data: {
+					datasets: [
+					{
+					label: 'SO2',
+					fill: false,
+					backgroundColor: 'rgba(0, 119, 290, 0.2)',
+         			borderColor: 'rgba(0, 119, 290, 0.6)',
+					borderWidth: 2,
+					pointRadius: 2,
+					pointHoverRadius: 5,
+					data: [1.06262,0.43053,0.34768,0.33325,0.44123,0.19677,0.37761,0.11872,0.00887,,,0.08026,0.05696,0.11800,0.25003,0.94574,null,0.76007,0.65502,0.59587,0.10135,0.18050,0.11576,0.04365,,,,,,,,,,,,,,,,0.36579,0.27629,,,,4.50526,0.49710,null,null,5.32416,2.91079,2.85162,5.10260,7.15460,4.36215,2.21546,1.07186,1.35480,1.12882,0.87730,0.73158,0.31474,,,0.20638,1.49719,1.77090,1.72725,1.42987,0.45641,0.32289,,,,2.14222,12.95736,25.50382,35.21924,34.27920,10.32874,14.30191,4.42537,1.59559,0.52815,0.18790,0.23488,,0.38614,1.60779,0.72197,0.65022,,,,,,,,2.10526,14.02762,17.50523,20.10379,24.89452,21.06433,19.06309,12.45469,9.67593,7.06840,9.15332,14.45530,14.48086,8.85261,7.95830,7.43384,6.01726,4.39137,2.64044,1.90924,1.20389,0.54466,0.13390,,2.05530,10.27548,],
+					},
+					{
+					label: 'granicna vrijednost',
+					fill: false,
+         			borderColor: 'rgb(255, 204, 0)',
+					borderWidth: 2,
+					data: [350,350,350,350,350,350,350,350,350,350,350,350,350,350,350,350,350,350,350,350,350,350,350,350,350,350,350,350,350,350,350,350,350,350,350,350,350,350,350,350,350,350,350,350,350,350,350,350,350,350,350,350,350,350,350,350,350,350,350,350,350,350,350,350,350,350,350,350,350,350,350,350,350,350,350,350,350,350,350,350,350,350,350,350,350,350,350,350,350,350,350,350,350,350,350,350,350,350,350,350,350,350,350,350,350,350,350,350,350,350,350,350,350,350,350,350,350,350,350,350],
+					pointRadius: 0,
+					},
+					{
+					label: 'prag upozorenja',
+					fill: false,
+         			borderColor: 'rgb(255, 102, 0)',
+					borderWidth: 2,
+					data: [365,365,365,365,365,365,365,365,365,365,365,365,365,365,365,365,365,365,365,365,365,365,365,365,365,365,365,365,365,365,365,365,365,365,365,365,365,365,365,365,365,365,365,365,365,365,365,365,365,365,365,365,365,365,365,365,365,365,365,365,365,365,365,365,365,365,365,365,365,365,365,365,365,365,365,365,365,365,365,365,365,365,365,365,365,365,365,365,365,365,365,365,365,365,365,365,365,365,365,365,365,365,365,365,365,365,365,365,365,365,365,365,365,365,365,365,365,365,365,365],
+					pointRadius: 0,
+					},
+					{
+					label: 'prag uzbune',
+					fill: false,
+         			borderColor: 'rgb(153, 0, 0)',
+					borderWidth: 2,
+					data: [500,500,500,500,500,500,500,500,500,500,500,500,500,500,500,500,500,500,500,500,500,500,500,500,500,500,500,500,500,500,500,500,500,500,500,500,500,500,500,500,500,500,500,500,500,500,500,500,500,500,500,500,500,500,500,500,500,500,500,500,500,500,500,500,500,500,500,500,500,500,500,500,500,500,500,500,500,500,500,500,500,500,500,500,500,500,500,500,500,500,500,500,500,500,500,500,500,500,500,500,500,500,500,500,500,500,500,500,500,500,500,500,500,500,500,500,500,500,500,500],
+					pointRadius: 0,
+					}
+					]
+			},
+			options: {
+				responsive: true,
+				maintainAspectRatio : true,
+				legend:{position: 'top'},
+				title: {
+					display: true,
+					text: 'automatska mjerna stanica Tetovo',
+				},
+				tooltips: {
+					mode: 'index',
+					intersect: false,
+						
+				},
+				hover: {
+					mode: 'nearest',
+					intersect: true
+				},
+				scales: {
+      				xAxes:[
+						  {
+          					id:'xAxis1',
+          					type:"category",
+          					labels:[20,21,22,23,00,01,02,03,04,05,06,07,08,09,10,11,12,13,14,15,16,17,18,19,20,21,22,23,00,01,02,03,04,05,06,07,08,09,10,11,12,13,14,15,14,08,09,10,11,11,09,10,11,12,13,14,15,16,17,18,19,20,21,22,23,00,01,02,03,04,05,06,07,08,09,10,11,12,13,14,15,16,17,18,19,20,21,22,23,00,01,02,03,04,05,06,07,08,09,10,11,12,13,14,15,16,17,18,19,20,21,22,23,00,01,02,03,04,05,06,07,08,09]
+        				 },
+        				 {
+          					id:'xAxis2',
+          					type:"category",
+							labels:['','','','','20.07.2024.','','','','','','','','','','','','','','','','','','','','','','','','21.07.2024.','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','10.08.2024.','','','','','','','','','','','','','','','','','','','','','','','','11.08.2024.','','','','','','','','','','','','','','','','','','','','','','','','12.08.2024.','','','','','','','','',''],
+							ticks: {
+                					autoSkip: false,
+                					maxRotation: 0,
+                					minRotation: 0
+           							}
+        				}],
+    
+					yAxes: [{
+						ticks: {
+                   			 	padding: 10,
+                				},
+						display: true,
+						scaleLabel: {
+							display: true,
+							labelString: "SO2 ('\u00B5'g/m3)",
+							
+						}
+					}]
+				}
+			},
+			   plugins: [{
+      				beforeDraw: function(c) {
+         			var chartHeight = c.chart.height;
+         			c.scales['y-axis-0'].options.ticks.fontSize = chartHeight * 2.5 / 100; //fontSize: 3% of canvas height
+         			/*c.scales['x-axis-0'].options.ticks.fontSize = chartHeight * 2.5 / 100; //fontSize: 3% of canvas height*/
+      				}
+   				}],
+		};
+/* --------------------------------- */	
+
+/*-----------------------------------------------------------------------------------------------------------------------------------------*/
+var prev_handler = window.onload;
+				window.onload = function() {
+			
+				var ctx = document.getElementById('canvas1').getContext('2d');
+				window.myLine = new Chart(ctx, graf1);
+				};
+</script>
+
+<div style="overflow-x:auto;">
+<table class="scrooltabela">
+            <tbody>
+            <thead>
+              <tr>
+                <th colspan="25">SO<sub>2</sub></th>
+              </tr>
+            </thead>  
+              <tr>
+                <th>datum</th>
+                <th>0:00 </th>
+                <th>1:00 </th>
+                <th>2:00 </th>
+                <th>3:00 </th>
+                <th>4:00 </th>
+                <th>5:00 </th>
+                <th>6:00 </th>
+                <th>7:00 </th>
+                <th>8:00 </th>
+                <th>9:00 </th>
+                <th>10:00</th>
+                <th>11:00</th>
+                <th>12:00</th>
+                <th>13:00</th>
+                <th>14:00</th>
+                <th>15:00</th>
+                <th>16:00</th>
+                <th>17:00</th>
+                <th>18:00</th>
+                <th>19:00</th>
+                <th>20:00</th>
+                <th>21:00</th>
+                <th>22:00</th>
+                <th>23:00</th>
+              </tr>
+              
+              <tr>
+                <th>12.8.2024.</th>
+                <td id="n">6.02</td>
+                <td id="n">4.39</td>
+                <td id="n">2.64</td>
+                <td id="n">1.91</td>
+                <td id="n">1.2</td>
+                <td id="n">0.54</td>
+                <td id="n">0.13</td>
+                <td id="n"></td>
+                <td id="n">2.06</td>
+                <td id="n">10.28</td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+              </tr>
+              <tr>
+                <th>11.8.2024.</th>
+                <td id="n">0.65</td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n">2.11</td>
+                <td id="n">14.03</td>
+                <td id="n">17.51</td>
+                <td id="n">20.1</td>
+                <td id="n">24.89</td>
+                <td id="n">21.06</td>
+                <td id="n">19.06</td>
+                <td id="n">12.45</td>
+                <td id="n">9.68</td>
+                <td id="n">7.07</td>
+                <td id="n">9.15</td>
+                <td id="n">14.46</td>
+                <td id="n">14.48</td>
+                <td id="n">8.85</td>
+                <td id="n">7.96</td>
+                <td id="n">7.43</td>
+              </tr>
+              <tr>
+                <th>10.8.2024.</th>
+                <td id="n">1.77</td>
+                <td id="n">1.73</td>
+                <td id="n">1.43</td>
+                <td id="n">0.46</td>
+                <td id="n">0.32</td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n">2.14</td>
+                <td id="n">12.96</td>
+                <td id="n">25.5</td>
+                <td id="n">35.22</td>
+                <td id="n">34.28</td>
+                <td id="n">10.33</td>
+                <td id="n">14.3</td>
+                <td id="n">4.43</td>
+                <td id="n">1.6</td>
+                <td id="n">0.53</td>
+                <td id="n">0.19</td>
+                <td id="n">0.23</td>
+                <td id="n"></td>
+                <td id="n">0.39</td>
+                <td id="n">1.61</td>
+                <td id="n">0.72</td>
+              </tr>
+              <tr>
+                <th>9.8.2024.</th>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n">2.85</td>
+                <td id="n">5.1</td>
+                <td id="n">7.15</td>
+                <td id="n">4.36</td>
+                <td id="n">2.22</td>
+                <td id="n">1.07</td>
+                <td id="n">1.35</td>
+                <td id="n">1.13</td>
+                <td id="n">0.88</td>
+                <td id="n">0.73</td>
+                <td id="n">0.31</td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n">0.21</td>
+                <td id="n">1.5</td>
+              </tr>
+              <tr>
+                <th></th>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n">2.91</td>
+              </tr>
+              <tr>
+                <th>23.7.2024.</th>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n">0.5</td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n">5.32</td>
+              </tr>  
+                
+             
+              </tbody>
+            </table>
+</div>	
+			
+      <script>if (prev_handler) {prev_handler();}</script>
+      <canvas id="canvas1" class="chartjs" width="300" height="90"></canvas>
+      
+  </div>
+<!-------------------------------------------------------------------->
+  <div class="gradovi" id="gradovi30" style="display: none"> 
+	 
+		 <table width="45%">
+  		  <tr>
+    		<td colspan="3">
+			Broj prekoračenja satnih vrijednosti azotdioksida (NO<sub>2</sub> &micro;g/m<sup>3</sup>) u periodu od  do  za:</td>
+  		  </tr>
+  		  <tr>
+    		<td width="40%">granična vrijednost</td>
+    		<td width="40%" align="center" id="gv">200</td>
+    		<td width="20%" align="center"><strong>0</strong></td>
+  		  </tr>
+  		  <tr>
+    		<td>prag upozorenja</td>
+    		<td align="center" id="u">210</td>
+    		<td align="center"><strong>0</strong></td>
+  		  </tr>
+  		  <tr>
+    		<td>prag uzbune</td>
+    		<td align="center" id="pu">400</td>
+    		<td align="center"><strong>0</strong></td>
+  		 </tr>
+		</table>
+
+<script>
+		
+			var graf3 = {
+			type: 'line',
+			data: {
+					datasets: [
+					{
+					label: 'NO2',
+					fill: false,
+					backgroundColor: 'rgba(0, 119, 190, 0.2)',
+         			borderColor: 'rgba(0, 119, 190, 0.6)',
+					borderWidth: 2,
+					pointRadius: 2,
+					pointHoverRadius: 5,
+					data: [7.21820,3.27724,3.90011,9.19220,4.45931,4.78375,7.23120,4.64633,3.63059,5.93640,7.20170,9.55030,16.04930,12.77260,18.62170,28.57200,null,7.36310,4.70787,22.90310,7.65990,5.32410,7.46360,2.27290,3.98101,4.90737,3.44914,3.11224,2.98225,3.82450,5.19760,3.19739,2.74854,4.54818,1.74208,1.57044,2.52518,2.66206,7.64820,9.55580,0.93776,0.87887,1.50492,1.02530,12.95030,16.56500,null,null,16.95890,7.54080,18.09830,19.58330,16.66210,2.44374,1.73916,2.87349,2.89975,5.09200,5.35360,5.27050,10.04340,9.66330,3.17007,3.17086,12.99250,11.29740,12.61660,15.84400,5.75230,6.44730,7.34080,4.46356,7.61690,21.53470,12.90870,17.77360,21.09300,9.25240,5.08430,5.10550,3.05653,3.29315,5.23340,1.00355,4.41024,7.19990,3.37168,3.23453,4.99942,5.61460,6.61660,8.76590,6.50910,6.24750,5.75360,3.08624,5.44320,15.02510,9.03800,13.19630,13.35700,6.00510,3.70964,3.68418,1.90284,8.55630,10.11800,1.05421,3.75049,8.56110,1.79168,4.83760,8.07000,7.19700,8.01800,8.43350,5.48590,4.55003,4.43476,2.09145,8.14220,28.01180,19.82690],
+					}
+					]
+			},
+			options: {
+				responsive: true,
+				maintainAspectRatio : true,
+				legend:{position: 'top'},
+				title: {
+					display: true,
+					text: 'automatska mjerna stanica Tetovo',
+				},
+				tooltips: {
+					mode: 'index',
+					intersect: false,
+						
+				},
+				hover: {
+					mode: 'nearest',
+					intersect: true
+				},
+				scales: {
+      				xAxes:[
+						  {
+          					id:'xAxis1',
+          					type:"category",
+          					labels:[20,21,22,23,00,01,02,03,04,05,06,07,08,09,10,11,12,13,14,15,16,17,18,19,20,21,22,23,00,01,02,03,04,05,06,07,08,09,10,11,12,13,14,15,14,08,09,10,11,11,09,10,11,12,13,14,15,16,17,18,19,20,21,22,23,00,01,02,03,04,05,06,07,08,09,10,11,12,13,14,15,16,17,18,19,20,21,22,23,00,01,02,03,04,05,06,07,08,09,10,11,12,13,14,15,16,17,18,19,20,21,22,23,00,01,02,03,04,05,06,07,08,09]
+        				 },
+        				 {
+          					id:'xAxis2',
+          					type:"category",
+							labels:['','','','','20.07.2024.','','','','','','','','','','','','','','','','','','','','','','','','21.07.2024.','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','10.08.2024.','','','','','','','','','','','','','','','','','','','','','','','','11.08.2024.','','','','','','','','','','','','','','','','','','','','','','','','12.08.2024.','','','','','','','','',''],
+							ticks: {
+                					autoSkip: false,
+                					maxRotation: 0,
+                					minRotation: 0
+           							}
+        				}],
+    
+					yAxes: [{
+						ticks: {
+                   			 	padding: 10,
+                				},
+						display: true,
+						scaleLabel: {
+							display: true,
+							labelString: 'NO2 (\u03BCg/m3)',
+							
+						}
+					}]
+				}
+			},
+			   plugins: [{
+      				beforeDraw: function(c) {
+         			var chartHeight = c.chart.height;
+         			c.scales['y-axis-0'].options.ticks.fontSize = chartHeight * 2.5 / 100; //fontSize: 3% of canvas height
+         			/*c.scales['x-axis-0'].options.ticks.fontSize = chartHeight * 2.5 / 100; //fontSize: 3% of canvas height*/
+      				}
+   				}],
+		};
+/* --------------------------------- */	
+
+/*-----------------------------------------------------------------------------------------------------------------------------------------*/
+var prev_handler = window.onload;
+				window.onload = function() {
+			
+				var ctx = document.getElementById('canvas3').getContext('2d');
+				window.myLine = new Chart(ctx, graf3);
+				};
+</script>
+
+<div style="overflow-x:auto;">
+            <table class="scrooltabela">
+            <tbody>
+            <thead>
+              <tr>
+                <th colspan="25">NO<sub>2</sub></th>
+              </tr>
+            </thead>  
+              <tr>
+                <th>datum</th>
+                <th>0:00 </th>
+                <th>1:00 </th>
+                <th>2:00 </th>
+                <th>3:00 </th>
+                <th>4:00 </th>
+                <th>5:00 </th>
+                <th>6:00 </th>
+                <th>7:00 </th>
+                <th>8:00 </th>
+                <th>9:00 </th>
+                <th>10:00</th>
+                <th>11:00</th>
+                <th>12:00</th>
+                <th>13:00</th>
+                <th>14:00</th>
+                <th>15:00</th>
+                <th>16:00</th>
+                <th>17:00</th>
+                <th>18:00</th>
+                <th>19:00</th>
+                <th>20:00</th>
+                <th>21:00</th>
+                <th>22:00</th>
+                <th>23:00</th>
+              </tr>
+              
+              <tr>
+                <th>12.8.2024.</th>
+                <td id="n">7.2</td>
+                <td id="n">8.02</td>
+                <td id="n">8.43</td>
+                <td id="n">5.49</td>
+                <td id="n">4.55</td>
+                <td id="n">4.43</td>
+                <td id="n">2.09</td>
+                <td id="n">8.14</td>
+                <td id="n">28.01</td>
+                <td id="n">19.83</td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+              </tr>
+              <tr>
+                <th>11.8.2024.</th>
+                <td id="n">5.61</td>
+                <td id="n">6.62</td>
+                <td id="n">8.77</td>
+                <td id="n">6.51</td>
+                <td id="n">6.25</td>
+                <td id="n">5.75</td>
+                <td id="n">3.09</td>
+                <td id="n">5.44</td>
+                <td id="n">15.03</td>
+                <td id="n">9.04</td>
+                <td id="n">13.2</td>
+                <td id="n">13.36</td>
+                <td id="n">6.01</td>
+                <td id="n">3.71</td>
+                <td id="n">3.68</td>
+                <td id="n">1.9</td>
+                <td id="n">8.56</td>
+                <td id="n">10.12</td>
+                <td id="n">1.05</td>
+                <td id="n">3.75</td>
+                <td id="n">8.56</td>
+                <td id="n">1.79</td>
+                <td id="n">4.84</td>
+                <td id="n">8.07</td>
+              </tr>
+              <tr>
+                <th>10.8.2024.</th>
+                <td id="n">11.3</td>
+                <td id="n">12.62</td>
+                <td id="n">15.84</td>
+                <td id="n">5.75</td>
+                <td id="n">6.45</td>
+                <td id="n">7.34</td>
+                <td id="n">4.46</td>
+                <td id="n">7.62</td>
+                <td id="n">21.53</td>
+                <td id="n">12.91</td>
+                <td id="n">17.77</td>
+                <td id="n">21.09</td>
+                <td id="n">9.25</td>
+                <td id="n">5.08</td>
+                <td id="n">5.11</td>
+                <td id="n">3.06</td>
+                <td id="n">3.29</td>
+                <td id="n">5.23</td>
+                <td id="n">1</td>
+                <td id="n">4.41</td>
+                <td id="n">7.2</td>
+                <td id="n">3.37</td>
+                <td id="n">3.23</td>
+                <td id="n">5</td>
+              </tr>
+              <tr>
+                <th>9.8.2024.</th>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n">18.1</td>
+                <td id="n">19.58</td>
+                <td id="n">16.66</td>
+                <td id="n">2.44</td>
+                <td id="n">1.74</td>
+                <td id="n">2.87</td>
+                <td id="n">2.9</td>
+                <td id="n">5.09</td>
+                <td id="n">5.35</td>
+                <td id="n">5.27</td>
+                <td id="n">10.04</td>
+                <td id="n">9.66</td>
+                <td id="n">3.17</td>
+                <td id="n">3.17</td>
+                <td id="n">12.99</td>
+              </tr>
+              <tr>
+                <th></th>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n">7.54</td>
+              </tr>
+              <tr>
+                <th>23.7.2024.</th>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n">16.57</td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n">16.96</td>
+              </tr>  
+                
+             
+              </tbody>
+            </table>
+		</div>		
+      <script>if (prev_handler) {prev_handler();}</script>
+      <canvas id="canvas3" class="chartjs" width="300" height="90"></canvas>
+  </div>
+<!-------------------------------------------------------------------->
+  <div class="gradovi" id="gradovi40" style="display: none"> 
+	
+<script>
+		
+			var graf4 = {
+			type: 'line',
+			data: {
+					datasets: [
+					{
+					label: 'NOx',
+					fill: false,
+					backgroundColor: 'rgba(0, 119, 290, 0.2)',
+         			borderColor: 'rgba(0, 119, 290, 0.6)',
+					borderWidth: 2,
+					pointRadius: 2,
+					pointHoverRadius: 5,
+					data: [8.13820,3.87613,4.65025,10.09090,5.22510,5.69630,8.11340,5.35610,4.46851,6.59970,7.93040,10.58460,18.30300,15.17910,23.97700,37.94670,null,9.87740,5.36010,14.73360,8.52110,6.26760,8.38710,2.89040,4.51116,5.83540,4.31692,4.09043,3.68850,4.48090,6.02840,3.93003,3.45451,5.25680,2.53430,2.27572,3.54504,3.84498,9.66340,12.08970,1.61609,1.48442,2.49839,1.74308,14.95160,20.34130,null,null,19.20490,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,8.83540,21.25070,21.90240,18.47250,2.91457,2.22152,3.57182,3.52211,6.15280,5.92160,6.19600,10.85330,10.29410,3.65187,3.60947,13.60580,11.80790,13.30440,16.55650,6.25030,7.01520,7.93010,5.00500,8.64860,25.57810,14.71850,19.76530,22.75650,10.63780,6.69330,6.07180,3.74555,4.31760,6.02330,1.58285,5.29610,7.68480,3.78043,3.86050,5.43190,6.04860,7.40810,9.27310,7.04570,6.85490,6.40310,3.63958,6.30430,17.67970,10.62580,14.89400,14.63650,6.68340,4.27242,4.29640,2.44950,10.66450,13.57550,1.46643,4.34300,9.03350,2.44127,5.47650,8.50920,7.78530,8.63440,8.92210,5.93250,5.07020,5.00840,2.85506,9.17660,31.99490,22.71010,],
+					}
+					]
+			},
+			options: {
+				responsive: true,
+				maintainAspectRatio : true,
+				legend:{position: 'top'},
+				title: {
+					display: true,
+					text: 'automatska mjerna stanica Tetovo',
+				},
+				tooltips: {
+					mode: 'index',
+					intersect: false,
+						
+				},
+				hover: {
+					mode: 'nearest',
+					intersect: true
+				},
+				scales: {
+      				xAxes:[
+						  {
+          					id:'xAxis1',
+          					type:"category",
+          					labels:[20,21,22,23,00,01,02,03,04,05,06,07,08,09,10,11,12,13,14,15,16,17,18,19,20,21,22,23,00,01,02,03,04,05,06,07,08,09,10,11,12,13,14,15,14,08,09,10,11,12,13,14,15,16,17,18,19,20,21,22,01,02,03,04,05,06,07,08,09,10,11,11,09,10,11,12,13,14,15,16,17,18,19,20,21,22,23,00,01,02,03,04,05,06,07,08,09,10,11,12,13,14,15,16,17,18,19,20,21,22,23,00,01,02,03,04,05,06,07,08,09,10,11,12,13,14,15,16,17,18,19,20,21,22,23,00,01,02,03,04,05,06,07,08,09]
+        				 },
+        				 {
+          					id:'xAxis2',
+          					type:"category",
+							labels:['','','','','20.07.2024.','','','','','','','','','','','','','','','','','','','','','','','','21.07.2024.','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','23.07.2024.','','','','','','','','','','','','','','','','','','','','','','','','','','','','10.08.2024.','','','','','','','','','','','','','','','','','','','','','','','','11.08.2024.','','','','','','','','','','','','','','','','','','','','','','','','12.08.2024.','','','','','','','','',''],
+							ticks: {
+                					autoSkip: false,
+                					maxRotation: 0,
+                					minRotation: 0
+           							}
+        				}],
+    
+					yAxes: [{
+						ticks: {
+                   			 	padding: 10,
+                				},
+						display: true,
+						scaleLabel: {
+							display: true,
+							labelString: 'NOx ("\00B5"g/m3)',
+							
+						}
+					}]
+				}
+			},
+			   plugins: [{
+      				beforeDraw: function(c) {
+         			var chartHeight = c.chart.height;
+         			c.scales['y-axis-0'].options.ticks.fontSize = chartHeight * 2.5 / 100; //fontSize: 3% of canvas height
+         			/*c.scales['x-axis-0'].options.ticks.fontSize = chartHeight * 2.5 / 100; //fontSize: 3% of canvas height*/
+      				}
+   				}],
+		};
+/* --------------------------------- */	
+
+/*-----------------------------------------------------------------------------------------------------------------------------------------*/
+var prev_handler = window.onload;
+				window.onload = function() {
+			
+				var ctx = document.getElementById('canvas4').getContext('2d');
+				window.myLine = new Chart(ctx, graf4);
+				};
+</script>
+
+<div style="overflow-x:auto;">
+            <table class="scrooltabela">
+            <tbody>
+            <thead>
+              <tr>
+                <th colspan="25">NO<sub>x</sub></th>
+              </tr>
+            </thead>  
+              <tr>
+                <th>datum</th>
+                <th>0:00 </th>
+                <th>1:00 </th>
+                <th>2:00 </th>
+                <th>3:00 </th>
+                <th>4:00 </th>
+                <th>5:00 </th>
+                <th>6:00 </th>
+                <th>7:00 </th>
+                <th>8:00 </th>
+                <th>9:00 </th>
+                <th>10:00</th>
+                <th>11:00</th>
+                <th>12:00</th>
+                <th>13:00</th>
+                <th>14:00</th>
+                <th>15:00</th>
+                <th>16:00</th>
+                <th>17:00</th>
+                <th>18:00</th>
+                <th>19:00</th>
+                <th>20:00</th>
+                <th>21:00</th>
+                <th>22:00</th>
+                <th>23:00</th>
+              </tr>
+              
+              <tr>
+                <th></th>
+                <td id="n">7.79</td>
+                <td id="n">8.63</td>
+                <td id="n">8.92</td>
+                <td id="n">5.93</td>
+                <td id="n">5.07</td>
+                <td id="n">5.01</td>
+                <td id="n">2.86</td>
+                <td id="n">9.18</td>
+                <td id="n">31.99</td>
+                <td id="n">22.71</td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+              </tr>
+              <tr>
+                <th></th>
+                <td id="n">6.05</td>
+                <td id="n">7.41</td>
+                <td id="n">9.27</td>
+                <td id="n">7.05</td>
+                <td id="n">6.85</td>
+                <td id="n">6.4</td>
+                <td id="n">3.64</td>
+                <td id="n">6.3</td>
+                <td id="n">17.68</td>
+                <td id="n">10.63</td>
+                <td id="n">14.89</td>
+                <td id="n">14.64</td>
+                <td id="n">6.68</td>
+                <td id="n">4.27</td>
+                <td id="n">4.3</td>
+                <td id="n">2.45</td>
+                <td id="n">10.66</td>
+                <td id="n">13.58</td>
+                <td id="n">1.47</td>
+                <td id="n">4.34</td>
+                <td id="n">9.03</td>
+                <td id="n">2.44</td>
+                <td id="n">5.48</td>
+                <td id="n">8.51</td>
+              </tr>
+              <tr>
+                <th></th>
+                <td id="n">11.81</td>
+                <td id="n">13.3</td>
+                <td id="n">16.56</td>
+                <td id="n">6.25</td>
+                <td id="n">7.02</td>
+                <td id="n">7.93</td>
+                <td id="n">5.01</td>
+                <td id="n">8.65</td>
+                <td id="n">25.58</td>
+                <td id="n">14.72</td>
+                <td id="n">19.77</td>
+                <td id="n">22.76</td>
+                <td id="n">10.64</td>
+                <td id="n">6.69</td>
+                <td id="n">6.07</td>
+                <td id="n">3.75</td>
+                <td id="n">4.32</td>
+                <td id="n">6.02</td>
+                <td id="n">1.58</td>
+                <td id="n">5.3</td>
+                <td id="n">7.68</td>
+                <td id="n">3.78</td>
+                <td id="n">3.86</td>
+                <td id="n">5.43</td>
+              </tr>
+              <tr>
+                <th></th>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n">21.25</td>
+                <td id="n">21.9</td>
+                <td id="n">18.47</td>
+                <td id="n">2.91</td>
+                <td id="n">2.22</td>
+                <td id="n">3.57</td>
+                <td id="n">3.52</td>
+                <td id="n">6.15</td>
+                <td id="n">5.92</td>
+                <td id="n">6.2</td>
+                <td id="n">10.85</td>
+                <td id="n">10.29</td>
+                <td id="n">3.65</td>
+                <td id="n">3.61</td>
+                <td id="n">13.61</td>
+              </tr>
+              <tr>
+                <th></th>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n">8.84</td>
+              </tr>
+              <tr>
+                <th></th>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n">20.34</td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n">19.2</td>
+              </tr>  
+                
+             
+              </tbody>
+            </table>
+		</div>		
+      <script>if (prev_handler) {prev_handler();}</script>
+        <canvas id="canvas4" class="chartjs" width="300" height="90"></canvas>
+  </div>
+<!-------------------------------------------------------------------->
+  <div class="gradovi" id="gradovi50" style="display: none"> 
+	
+<script>
+		
+			var graf5 = {
+			type: 'line',
+			data: {
+					datasets: [
+					{
+					label: 'NO',
+					fill: false,
+					backgroundColor: 'rgba(0, 119, 290, 0.2)',
+         			borderColor: 'rgba(0, 119, 290, 0.6)',
+					borderWidth: 2,
+					pointRadius: 2,
+					pointHoverRadius: 5,
+					data: [7.48312,1.32961,0.85264,1.08263,0.91429,0.91014,1.02843,0.86130,0.89992,0.76137,1.22068,0.97907,1.35109,1.06532,2.46317,7.98292,6.57032,4.01776,1.11936,0.78475,0.65779,0.99830,0.74820,0.92348,1.14724,0.74682,0.93542,1.12074,0.95499,1.13789,1.10013,0.88502,1.04489,0.82717,0.90858,1.28977,2.81043,3.00094,6.67806,11.69025,null,3.13533,0.81332,13.38193,1.07398,1.17651,1.15157,0.77002,0.66108,1.15729,1.08212,1.21980,0.88069,0.81852,1.03605,0.91360,0.88034,0.88364,0.98790,0.87948,1.27177,1.47510,2.51288,3.15976,0.84588,0.75513,1.23886,0.89507,2.49556,4.70898,null,null,2.80072,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,1.61434,3.93099,2.89183,2.25759,0.58713,0.60150,0.87082,0.77608,1.32286,0.70837,1.15400,1.00990,0.78665,0.60080,0.54695,0.76482,0.63667,0.85766,0.88849,0.62108,0.70820,0.73487,0.67511,1.28649,5.04203,2.25690,2.48361,2.07435,1.72762,2.00646,1.20491,0.85922,1.27748,0.98496,0.72240,1.10463,0.60462,0.50971,0.78058,0.53933,0.54124,0.98704,0.63250,0.66905,0.75738,0.80985,0.69000,1.07380,3.31027,1.97996,2.11713,1.59546,0.84588,0.70179,0.76344,0.68170,2.62891,4.31150,0.51404,0.73885,0.58921,0.81003,0.79670,0.54764,0.73365,0.76864,0.60930,0.55682,0.64861,0.71528,0.95222,1.28995,4.96705,3.59534,],
+					}
+					]
+			},
+			options: {
+				responsive: true,
+				maintainAspectRatio : true,
+				legend:{position: 'top'},
+				title: {
+					display: true,
+					text: 'automatska mjerna stanica Tetovo',
+				},
+				tooltips: {
+					mode: 'index',
+					intersect: false,
+						
+				},
+				hover: {
+					mode: 'nearest',
+					intersect: true
+				},
+				scales: {
+      				xAxes:[
+						  {
+          					id:'xAxis1',
+          					type:"category",
+          					labels:[20,21,22,23,00,01,02,03,04,05,06,07,08,09,10,11,12,13,14,15,16,17,18,19,20,21,22,23,00,01,02,03,04,05,06,07,08,09,10,11,12,13,14,15,16,17,18,19,20,21,22,23,00,01,02,03,04,05,06,07,08,09,10,11,12,13,14,15,14,08,09,10,11,12,13,14,15,16,17,18,19,20,21,22,01,02,03,04,05,06,07,08,09,10,11,11,09,10,11,12,13,14,15,16,17,18,19,20,21,22,23,00,01,02,03,04,05,06,07,08,09,10,11,12,13,14,15,16,17,18,19,20,21,22,23,00,01,02,03,04,05,06,07,08,09,10,11,12,13,14,15,16,17,18,19,20,21,22,23,00,01,02,03,04,05,06,07,08,09]
+        				 },
+        				 {
+          					id:'xAxis2',
+          					type:"category",
+							labels:['','','','','19.07.2024.','','','','','','','','','','','','','','','','','','','','','','','','20.07.2024.','','','','','','','','','','','','','','','','','','','','','','','','21.07.2024.','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','23.07.2024.','','','','','','','','','','','','','','','','','','','','','','','','','','','','10.08.2024.','','','','','','','','','','','','','','','','','','','','','','','','11.08.2024.','','','','','','','','','','','','','','','','','','','','','','','','12.08.2024.','','','','','','','','',''],
+							ticks: {
+                					autoSkip: false,
+                					maxRotation: 0,
+                					minRotation: 0
+           							}
+        				}],
+    
+					yAxes: [{
+						ticks: {
+                   			 	padding: 10,
+                				},
+						display: true,
+						scaleLabel: {
+							display: true,
+							labelString: 'NO (\u03BCg/m3)',
+							
+						}
+					}]
+				}
+			},
+			   plugins: [{
+      				beforeDraw: function(c) {
+         			var chartHeight = c.chart.height;
+         			c.scales['y-axis-0'].options.ticks.fontSize = chartHeight * 2.5 / 100; //fontSize: 3% of canvas height
+         			/*c.scales['x-axis-0'].options.ticks.fontSize = chartHeight * 2.5 / 100; //fontSize: 3% of canvas height*/
+      				}
+   				}],
+		};
+/* --------------------------------- */	
+
+/*-----------------------------------------------------------------------------------------------------------------------------------------*/
+var prev_handler = window.onload;
+				window.onload = function() {
+			
+				var ctx = document.getElementById('canvas5').getContext('2d');
+				window.myLine = new Chart(ctx, graf5);
+				};
+</script>
+
+		<div style="overflow-x:auto;">
+            <table class="scrooltabela">
+            <tbody>
+            <thead>
+              <tr>
+                <th colspan="25">NO</th>
+              </tr>
+            </thead>  
+              <tr>
+                <th>datum</th>
+                <th>0:00 </th>
+                <th>1:00 </th>
+                <th>2:00 </th>
+                <th>3:00 </th>
+                <th>4:00 </th>
+                <th>5:00 </th>
+                <th>6:00 </th>
+                <th>7:00 </th>
+                <th>8:00 </th>
+                <th>9:00 </th>
+                <th>10:00</th>
+                <th>11:00</th>
+                <th>12:00</th>
+                <th>13:00</th>
+                <th>14:00</th>
+                <th>15:00</th>
+                <th>16:00</th>
+                <th>17:00</th>
+                <th>18:00</th>
+                <th>19:00</th>
+                <th>20:00</th>
+                <th>21:00</th>
+                <th>22:00</th>
+                <th>23:00</th>
+              </tr>
+              
+              <tr>
+                <th>12.8.2024.</th>
+                <td id="n">0.73</td>
+                <td id="n">0.77</td>
+                <td id="n">0.61</td>
+                <td id="n">0.56</td>
+                <td id="n">0.65</td>
+                <td id="n">0.72</td>
+                <td id="n">0.95</td>
+                <td id="n">1.29</td>
+                <td id="n">4.97</td>
+                <td id="n">3.6</td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+              </tr>
+              <tr>
+                <th>11.8.2024.</th>
+                <td id="n">0.54</td>
+                <td id="n">0.99</td>
+                <td id="n">0.63</td>
+                <td id="n">0.67</td>
+                <td id="n">0.76</td>
+                <td id="n">0.81</td>
+                <td id="n">0.69</td>
+                <td id="n">1.07</td>
+                <td id="n">3.31</td>
+                <td id="n">1.98</td>
+                <td id="n">2.12</td>
+                <td id="n">1.6</td>
+                <td id="n">0.85</td>
+                <td id="n">0.7</td>
+                <td id="n">0.76</td>
+                <td id="n">0.68</td>
+                <td id="n">2.63</td>
+                <td id="n">4.31</td>
+                <td id="n">0.51</td>
+                <td id="n">0.74</td>
+                <td id="n">0.59</td>
+                <td id="n">0.81</td>
+                <td id="n">0.8</td>
+                <td id="n">0.55</td>
+              </tr>
+              <tr>
+                <th>10.8.2024.</th>
+                <td id="n">0.64</td>
+                <td id="n">0.86</td>
+                <td id="n">0.89</td>
+                <td id="n">0.62</td>
+                <td id="n">0.71</td>
+                <td id="n">0.73</td>
+                <td id="n">0.68</td>
+                <td id="n">1.29</td>
+                <td id="n">5.04</td>
+                <td id="n">2.26</td>
+                <td id="n">2.48</td>
+                <td id="n">2.07</td>
+                <td id="n">1.73</td>
+                <td id="n">2.01</td>
+                <td id="n">1.2</td>
+                <td id="n">0.86</td>
+                <td id="n">1.28</td>
+                <td id="n">0.98</td>
+                <td id="n">0.72</td>
+                <td id="n">1.1</td>
+                <td id="n">0.6</td>
+                <td id="n">0.51</td>
+                <td id="n">0.78</td>
+                <td id="n">0.54</td>
+              </tr>
+              <tr>
+                <th>9.8.2024.</th>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n">3.93</td>
+                <td id="n">2.89</td>
+                <td id="n">2.26</td>
+                <td id="n">0.59</td>
+                <td id="n">0.6</td>
+                <td id="n">0.87</td>
+                <td id="n">0.78</td>
+                <td id="n">1.32</td>
+                <td id="n">0.71</td>
+                <td id="n">1.15</td>
+                <td id="n">1.01</td>
+                <td id="n">0.79</td>
+                <td id="n">0.6</td>
+                <td id="n">0.55</td>
+                <td id="n">0.76</td>
+              </tr>
+              <tr>
+                <th></th>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n">1.61</td>
+              </tr>
+              <tr>
+                <th>23.7.2024.</th>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n">4.71</td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n">2.8</td>
+              </tr>  
+                
+             
+              </tbody>
+            </table>
+		</div>
+      <script>if (prev_handler) {prev_handler();}</script>
+        <canvas id="canvas5" class="chartjs" width="300" height="90"></canvas>
+  </div>
+<!-------------------------------------------------------------------->
+  <div class="gradovi" id="gradovi60" style="display:none"> 
+	
+<script>
+		
+			var graf6 = {
+			type: 'line',
+			data: {
+					datasets: [
+					{
+					label: 'CO',
+					fill: false,
+					backgroundColor: 'rgba(0, 119, 190, 0.2)',
+         			borderColor: 'rgba(0, 119, 190, 0.6)',
+					borderWidth: 2,
+					pointRadius: 2,
+					pointHoverRadius: 5,
+					data: [523.46246,571.10498,601.95099,1891.46509,1191.33069,686.72510,611.40265,685.31665,643.90155,873.62854,980.58850,1040.60437,991.72803,1064.29175,1153.33777,817.66345,null,307.88965,343.10065,471.43164,570.23193,452.41187,502.06812,471.42001,478.40399,467.91635,464.85504,503.75592,475.10989,445.81201,483.64200,494.70001,575.21387,573.07214,530.20203,522.43811,644.65814,547.27789,789.96027,812.64661,553.17938,494.61853,464.92487,686.74835,560.58240,813.96191,null,null,1116.25269,608.19000,1978.77673,1919.45923,1410.16272,1029.03418,938.13745,947.10022,959.46191,991.97241,1055.38721,1138.99731,1230.73218,1232.43152,1228.19458,1156.42236,1245.66626,1429.19409,1346.55017,1341.31213,1359.15625,1332.37256,1345.22314,1373.78772,1402.06128,1814.45483,3100.87280,2595.16138,2240.56030,1342.44116,1080.96021,1184.38159,1063.11609,1231.11621,1247.44714,1147.50610,1140.12634,1069.32019,1071.46204,1099.00220,1135.58679,1148.01831,1201.96973,1265.32617,1396.17139,1359.70337,1321.25635,1347.52783,1335.29419,1351.78809,1944.34558,2584.49902,2822.17627,1834.51062,1054.17664,954.91071,905.23114,1060.86963,1662.84387,1047.33228,1188.76990,1294.51929,1277.47839,1246.63232,1272.07739,1270.64563,1265.65210,1242.09277,1264.53467,1341.62634,1331.91858,1343.26770,1303.48218,1652.78687,2155.21582],
+					}
+					]
+			},
+			options: {
+				responsive: true,
+				maintainAspectRatio : true,
+				legend:{position: 'top'},
+				title: {
+					display: true,
+					text: 'automatska mjerna stanica Tetovo',
+				},
+				tooltips: {
+					mode: 'index',
+					intersect: false,
+						
+				},
+				hover: {
+					mode: 'nearest',
+					intersect: true
+				},
+				scales: {
+      				xAxes:[
+						  {
+          					id:'xAxis1',
+          					type:"category",
+          					labels:[20,21,22,23,00,01,02,03,04,05,06,07,08,09,10,11,12,13,14,15,16,17,18,19,20,21,22,23,00,01,02,03,04,05,06,07,08,09,10,11,12,13,14,15,14,08,09,10,11,11,09,10,11,12,13,14,15,16,17,18,19,20,21,22,23,00,01,02,03,04,05,06,07,08,09,10,11,12,13,14,15,16,17,18,19,20,21,22,23,00,01,02,03,04,05,06,07,08,09,10,11,12,13,14,15,16,17,18,19,20,21,22,23,00,01,02,03,04,05,06,07,08,09]
+        				 },
+        				 {
+          					id:'xAxis2',
+          					type:"category",
+							labels:['','','','','20.07.2024.','','','','','','','','','','','','','','','','','','','','','','','','21.07.2024.','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','10.08.2024.','','','','','','','','','','','','','','','','','','','','','','','','11.08.2024.','','','','','','','','','','','','','','','','','','','','','','','','12.08.2024.','','','','','','','','',''],
+							ticks: {
+                					autoSkip: false,
+                					maxRotation: 0,
+                					minRotation: 0
+           							}
+        				}],
+    
+					yAxes: [{
+						ticks: {
+                   			 	padding: 10,
+                				},
+						display: true,
+						scaleLabel: {
+							display: true,
+							labelString: 'CO (\u03BCg/m3)',
+							
+						}
+					}]
+				}
+			},
+			   plugins: [{
+      				beforeDraw: function(c) {
+         			var chartHeight = c.chart.height;
+         			c.scales['y-axis-0'].options.ticks.fontSize = chartHeight * 2.5 / 100; //fontSize: 3% of canvas height
+         			/*c.scales['x-axis-0'].options.ticks.fontSize = chartHeight * 2.5 / 100; //fontSize: 3% of canvas height*/
+      				}
+   				}],
+		};
+/* --------------------------------- */	
+
+/*-----------------------------------------------------------------------------------------------------------------------------------------*/
+var prev_handler = window.onload;
+				window.onload = function() {
+			
+				var ctx = document.getElementById('canvas6').getContext('2d');
+				window.myLine = new Chart(ctx, graf6);
+				};
+</script>
+
+		<div style="overflow-x:auto;">
+            <table class="scrooltabela">
+            <tbody>
+            <thead>
+              <tr>
+                <th colspan="25">CO</th>
+              </tr>
+            </thead>  
+              <tr>
+                <th>datum</th>
+                <th>0:00 </th>
+                <th>1:00 </th>
+                <th>2:00 </th>
+                <th>3:00 </th>
+                <th>4:00 </th>
+                <th>5:00 </th>
+                <th>6:00 </th>
+                <th>7:00 </th>
+                <th>8:00 </th>
+                <th>9:00 </th>
+                <th>10:00</th>
+                <th>11:00</th>
+                <th>12:00</th>
+                <th>13:00</th>
+                <th>14:00</th>
+                <th>15:00</th>
+                <th>16:00</th>
+                <th>17:00</th>
+                <th>18:00</th>
+                <th>19:00</th>
+                <th>20:00</th>
+                <th>21:00</th>
+                <th>22:00</th>
+                <th>23:00</th>
+              </tr>
+              
+              <tr>
+                <th>12.8.2024.</th>
+                <td id="n">1270.65</td>
+                <td id="n">1265.65</td>
+                <td id="n">1242.09</td>
+                <td id="n">1264.53</td>
+                <td id="n">1341.63</td>
+                <td id="n">1331.92</td>
+                <td id="n">1343.27</td>
+                <td id="n">1303.48</td>
+                <td id="n">1652.79</td>
+                <td id="n">2155.22</td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+              </tr>
+              <tr>
+                <th>11.8.2024.</th>
+                <td id="n">1148.02</td>
+                <td id="n">1201.97</td>
+                <td id="n">1265.33</td>
+                <td id="n">1396.17</td>
+                <td id="n">1359.7</td>
+                <td id="n">1321.26</td>
+                <td id="n">1347.53</td>
+                <td id="n">1335.29</td>
+                <td id="n">1351.79</td>
+                <td id="n">1944.35</td>
+                <td id="n">2584.5</td>
+                <td id="n">2822.18</td>
+                <td id="n">1834.51</td>
+                <td id="n">1054.18</td>
+                <td id="n">954.91</td>
+                <td id="n">905.23</td>
+                <td id="n">1060.87</td>
+                <td id="n">1662.84</td>
+                <td id="n">1047.33</td>
+                <td id="n">1188.77</td>
+                <td id="n">1294.52</td>
+                <td id="n">1277.48</td>
+                <td id="n">1246.63</td>
+                <td id="n">1272.08</td>
+              </tr>
+              <tr>
+                <th>10.8.2024.</th>
+                <td id="n">1429.19</td>
+                <td id="n">1346.55</td>
+                <td id="n">1341.31</td>
+                <td id="n">1359.16</td>
+                <td id="n">1332.37</td>
+                <td id="n">1345.22</td>
+                <td id="n">1373.79</td>
+                <td id="n">1402.06</td>
+                <td id="n">1814.45</td>
+                <td id="n">3100.87</td>
+                <td id="n">2595.16</td>
+                <td id="n">2240.56</td>
+                <td id="n">1342.44</td>
+                <td id="n">1080.96</td>
+                <td id="n">1184.38</td>
+                <td id="n">1063.12</td>
+                <td id="n">1231.12</td>
+                <td id="n">1247.45</td>
+                <td id="n">1147.51</td>
+                <td id="n">1140.13</td>
+                <td id="n">1069.32</td>
+                <td id="n">1071.46</td>
+                <td id="n">1099</td>
+                <td id="n">1135.59</td>
+              </tr>
+              <tr>
+                <th>9.8.2024.</th>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n">1978.78</td>
+                <td id="n">1919.46</td>
+                <td id="n">1410.16</td>
+                <td id="n">1029.03</td>
+                <td id="n">938.14</td>
+                <td id="n">947.1</td>
+                <td id="n">959.46</td>
+                <td id="n">991.97</td>
+                <td id="n">1055.39</td>
+                <td id="n">1139</td>
+                <td id="n">1230.73</td>
+                <td id="n">1232.43</td>
+                <td id="n">1228.19</td>
+                <td id="n">1156.42</td>
+                <td id="n">1245.67</td>
+              </tr>
+              <tr>
+                <th></th>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n">608.19</td>
+              </tr>
+              <tr>
+                <th>23.7.2024.</th>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n">813.96</td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n">1116.25</td>
+              </tr>  
+                
+             
+              </tbody>
+            </table>
+		</div>
+      <script>if (prev_handler) {prev_handler();}</script>
+            <canvas id="canvas6" class="chartjs" width="300" height="90"></canvas>
+  </div>
+<!-------------------------------------------------------------------->
+  <div class="gradovi" id="gradovi70" style="display: none"> 
+	<br> 
+		 <table width="45%">
+  		  <tr>
+    		<td colspan="3">
+			Broj prekoračenja satnih vrijednosti ozona (O<sub>3</sub>) u periodu od 23.7.2024. do 12.8.2024. za:</td>
+  		  </tr>
+  		  <tr>
+    		<td width="40%">prag upozorenja</td>
+    		<td width="40%" align="center" id="u">180</td>
+    		<td width="20%" align="center"><strong>0</strong></td>
+  		  </tr>
+  		  <tr>
+    		<td>prag uzbune</td>
+    		<td align="center" id="pu">240</td>
+    		<td align="center"><strong>0</strong></td>
+  		 </tr>
+		</table>
+<script>
+		
+			var graf7 = {
+			type: 'line',
+			data: {
+					datasets: [
+					{
+					label: 'O3',
+					fill: false,
+					backgroundColor: 'rgba(0, 119, 190, 0.2)',
+         			borderColor: 'rgba(0, 119, 190, 0.6)',
+					borderWidth: 2,
+					pointRadius: 2,
+					pointHoverRadius: 5,
+					data: [,,,,,,,,,,,,,,,,null,,,100.26471,,,,,,,,,,,117.71896,,,,,116.84914,113.88457,,,95.33068,98.82372,88.91934,88.31705,88.72822,69.10780,96.36249,null,null,85.34031,87.33611,24.57760,30.90873,38.24395,40.09631,39.53212,38.67627,38.42270,37.91218,36.60805,36.48217,34.98233,34.42791,34.23480,33.81146,29.80171,27.21080,26.86148,24.96224,24.13451,24.28573,22.67018,21.26969,20.15090,20.41104,27.18666,32.22563,36.84346,36.31937,34.67629,35.36317,34.74213,34.33375,34.85285,34.73455,33.96547,32.91850,30.81118,28.80840,28.32302,26.18617,25.43426,24.25920,22.48565,22.35597,22.12974,20.43658,19.85444,22.61013,26.83534,32.14703,38.33393,40.80254,40.60144,39.21631,37.98261,36.03489,36.52825,39.21113,40.37361,39.55367,36.20267,33.72528,32.69326,30.89238,29.28979,28.03673,26.68831,26.72442,25.02348,24.30927,22.97023,22.09323,27.20182],
+					}
+					]
+			},
+			options: {
+				responsive: true,
+				maintainAspectRatio : true,
+				legend:{position: 'top'},
+				title: {
+					display: true,
+					text: 'automatska mjerna stanica Tetovo',
+				},
+				tooltips: {
+					mode: 'index',
+					intersect: false,
+						
+				},
+				hover: {
+					mode: 'nearest',
+					intersect: true
+				},
+				scales: {
+      				xAxes:[
+						  {
+          					id:'xAxis1',
+          					type:"category",
+          					labels:[20,21,22,23,00,01,02,03,04,05,06,07,08,09,10,11,12,13,14,15,16,17,18,19,20,21,22,23,00,01,02,03,04,05,06,07,08,09,10,11,12,13,14,15,14,08,09,10,11,11,09,10,11,12,13,14,15,16,17,18,19,20,21,22,23,00,01,02,03,04,05,06,07,08,09,10,11,12,13,14,15,16,17,18,19,20,21,22,23,00,01,02,03,04,05,06,07,08,09,10,11,12,13,14,15,16,17,18,19,20,21,22,23,00,01,02,03,04,05,06,07,08,09]
+        				 },
+        				 {
+          					id:'xAxis2',
+          					type:"category",
+							labels:['','','','','20.07.2024.','','','','','','','','','','','','','','','','','','','','','','','','21.07.2024.','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','10.08.2024.','','','','','','','','','','','','','','','','','','','','','','','','11.08.2024.','','','','','','','','','','','','','','','','','','','','','','','','12.08.2024.','','','','','','','','',''],
+							ticks: {
+                					autoSkip: false,
+                					maxRotation: 0,
+                					minRotation: 0
+           							}
+        				}],
+    
+					yAxes: [{
+						ticks: {
+                   			 	padding: 10,
+                				},
+						display: true,
+						scaleLabel: {
+							display: true,
+							labelString: 'O3 (micro g/m3)',
+							
+						}
+					}]
+				}
+			},
+			   plugins: [{
+      				beforeDraw: function(c) {
+         			var chartHeight = c.chart.height;
+         			c.scales['y-axis-0'].options.ticks.fontSize = chartHeight * 2.5 / 100; //fontSize: 3% of canvas height
+         			/*c.scales['x-axis-0'].options.ticks.fontSize = chartHeight * 2.5 / 100; //fontSize: 3% of canvas height*/
+      				}
+   				}],
+		};
+/* --------------------------------- */	
+
+/*-----------------------------------------------------------------------------------------------------------------------------------------*/
+var prev_handler = window.onload;
+				window.onload = function() {
+			
+				var ctx = document.getElementById('canvas7').getContext('2d');
+				window.myLine = new Chart(ctx, graf7);
+				};
+</script>
+
+<div style="overflow-x:auto;">
+            <table class="scrooltabela">
+            <tbody>
+            <thead>
+              <tr>
+                <th colspan="25">O<sub>3</sub></th>
+              </tr>
+            </thead>  
+              <tr>
+                <th>datum</th>
+                <th>0:00 </th>
+                <th>1:00 </th>
+                <th>2:00 </th>
+                <th>3:00 </th>
+                <th>4:00 </th>
+                <th>5:00 </th>
+                <th>6:00 </th>
+                <th>7:00 </th>
+                <th>8:00 </th>
+                <th>9:00 </th>
+                <th>10:00</th>
+                <th>11:00</th>
+                <th>12:00</th>
+                <th>13:00</th>
+                <th>14:00</th>
+                <th>15:00</th>
+                <th>16:00</th>
+                <th>17:00</th>
+                <th>18:00</th>
+                <th>19:00</th>
+                <th>20:00</th>
+                <th>21:00</th>
+                <th>22:00</th>
+                <th>23:00</th>
+              </tr>
+              
+              <tr>
+                <th>12.8.2024.</th>
+                <td id="n">30.89</td>
+                <td id="n">29.29</td>
+                <td id="n">28.04</td>
+                <td id="n">26.69</td>
+                <td id="n">26.72</td>
+                <td id="n">25.02</td>
+                <td id="n">24.31</td>
+                <td id="n">22.97</td>
+                <td id="n">22.09</td>
+                <td id="n">27.2</td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+              </tr>
+              <tr>
+                <th>11.8.2024.</th>
+                <td id="n">26.19</td>
+                <td id="n">25.43</td>
+                <td id="n">24.26</td>
+                <td id="n">22.49</td>
+                <td id="n">22.36</td>
+                <td id="n">22.13</td>
+                <td id="n">20.44</td>
+                <td id="n">19.85</td>
+                <td id="n">22.61</td>
+                <td id="n">26.84</td>
+                <td id="n">32.15</td>
+                <td id="n">38.33</td>
+                <td id="n">40.8</td>
+                <td id="n">40.6</td>
+                <td id="n">39.22</td>
+                <td id="n">37.98</td>
+                <td id="n">36.03</td>
+                <td id="n">36.53</td>
+                <td id="n">39.21</td>
+                <td id="n">40.37</td>
+                <td id="n">39.55</td>
+                <td id="n">36.2</td>
+                <td id="n">33.73</td>
+                <td id="n">32.69</td>
+              </tr>
+              <tr>
+                <th>10.8.2024.</th>
+                <td id="n">27.21</td>
+                <td id="n">26.86</td>
+                <td id="n">24.96</td>
+                <td id="n">24.13</td>
+                <td id="n">24.29</td>
+                <td id="n">22.67</td>
+                <td id="n">21.27</td>
+                <td id="n">20.15</td>
+                <td id="n">20.41</td>
+                <td id="n">27.19</td>
+                <td id="n">32.23</td>
+                <td id="n">36.84</td>
+                <td id="n">36.32</td>
+                <td id="n">34.68</td>
+                <td id="n">35.36</td>
+                <td id="n">34.74</td>
+                <td id="n">34.33</td>
+                <td id="n">34.85</td>
+                <td id="n">34.73</td>
+                <td id="n">33.97</td>
+                <td id="n">32.92</td>
+                <td id="n">30.81</td>
+                <td id="n">28.81</td>
+                <td id="n">28.32</td>
+              </tr>
+              <tr>
+                <th>9.8.2024.</th>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n">24.58</td>
+                <td id="n">30.91</td>
+                <td id="n">38.24</td>
+                <td id="n">40.1</td>
+                <td id="n">39.53</td>
+                <td id="n">38.68</td>
+                <td id="n">38.42</td>
+                <td id="n">37.91</td>
+                <td id="n">36.61</td>
+                <td id="n">36.48</td>
+                <td id="n">34.98</td>
+                <td id="n">34.43</td>
+                <td id="n">34.23</td>
+                <td id="n">33.81</td>
+                <td id="n">29.8</td>
+              </tr>
+              <tr>
+                <th></th>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n">87.34</td>
+              </tr>
+              <tr>
+                <th>23.7.2024.</th>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n">96.36</td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n">85.34</td>
+              </tr>  
+                
+             
+              </tbody>
+            </table>
+		</div>      <script>if (prev_handler) {prev_handler();}</script>
+        <canvas id="canvas7" class="chartjs" width="300" height="90"></canvas>
+		
+  </div>
+<!-------------------------------------------------------------------->
+  <div class="gradovi" id="gradovi80" style="display: none"> 
+	<br>     Broj satnih vrijednosti lebdećih čestica (PM<sub>10</sub>) većih od 50 &micro;g/m<sup>3</sup> u periodu od: 23.7.2024. do 12.8.2024. je <strong>6</strong>
+<script>
+		
+			var graf8 = {
+			type: 'line',
+			data: {
+					datasets: [
+					{
+					label: 'PM10',
+					fill: false,
+					backgroundColor: 'rgba(0, 119, 290, 0.2)',
+         			borderColor: 'rgba(0, 119, 290, 0.6)',
+					borderWidth: 2,
+					pointRadius: 2,
+					pointHoverRadius: 5,
+					data: [39.31200,31.13400,26.93900,34.35700,28.21500,26.10100,31.32000,32.79500,32.84300,35.87900,45.77400,46.59100,40.96500,50.29100,73.59400,56.48800,null,40.25200,36.96500,25.16700,16.41600,16.14800,18.36800,15.96700,16.68000,19.17400,20.62300,24.91900,28.37000,33.34100,27.92000,25.58100,27.83100,27.62300,25.18900,21.30900,21.29000,22.47900,25.37800,26.58000,13.83400,10.16800,11.44700,14.24500,20.83300,31.36000,null,null,42.13200,32.85100,57.80100,61.70000,48.57600,22.37100,17.47100,17.30000,19.69800,24.90400,18.45400,21.18200,23.77200,15.70300,13.22100,13.04600,24.51900,39.60100,31.72000,42.14100,35.19000,26.39000,20.07900,17.10300,16.77900,30.10700,36.53400,46.49000,39.52400,63.05300,39.46100,27.28100,25.27500,17.45900,23.03600,13.48300,15.87000,18.54500,16.98100,16.30600,17.88300,16.76100,13.71500,13.03300,15.33600,15.49400,14.75300,15.78200,16.33200,23.30800,39.46500,50.38100,32.58900,27.29300,18.34200,20.03300,20.45800,45.25500,27.87800,17.27100,23.45600,33.06300,36.72900,32.72400,36.60500,43.23100,41.22000,42.39400,44.10900,42.17300,41.94800,38.08700,37.72400,62.19900,87.51800],
+					}
+					]
+			},
+			options: {
+				responsive: true,
+				maintainAspectRatio : true,
+				legend:{position: 'top'},
+				title: {
+					display: true,
+					text: 'automatska mjerna stanica Tetovo',
+				},
+				tooltips: {
+					mode: 'index',
+					intersect: false,
+						
+				},
+				hover: {
+					mode: 'nearest',
+					intersect: true
+				},
+				scales: {
+      				xAxes:[
+						  {
+          					id:'xAxis1',
+          					type:"category",
+          					labels:[20,21,22,23,00,01,02,03,04,05,06,07,08,09,10,11,12,13,14,15,16,17,18,19,20,21,22,23,00,01,02,03,04,05,06,07,08,09,10,11,12,13,14,15,14,08,09,10,11,11,09,10,11,12,13,14,15,16,17,18,19,20,21,22,23,00,01,02,03,04,05,06,07,08,09,10,11,12,13,14,15,16,17,18,19,20,21,22,23,00,01,02,03,04,05,06,07,08,09,10,11,12,13,14,15,16,17,18,19,20,21,22,23,00,01,02,03,04,05,06,07,08,09]
+        				 },
+        				 {
+          					id:'xAxis2',
+          					type:"category",
+							labels:['','','','','20.07.2024.','','','','','','','','','','','','','','','','','','','','','','','','21.07.2024.','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','10.08.2024.','','','','','','','','','','','','','','','','','','','','','','','','11.08.2024.','','','','','','','','','','','','','','','','','','','','','','','','12.08.2024.','','','','','','','','',''],
+							ticks: {
+                					autoSkip: false,
+                					maxRotation: 0,
+                					minRotation: 0
+           							}
+        				}],
+    
+					yAxes: [{
+						ticks: {
+                   			 	padding: 10,
+                				},
+						display: true,
+						scaleLabel: {
+							display: true,
+							labelString: 'PM10 ("\00B5"g/m3)',
+							
+						}
+					}]
+				}
+			},
+			   plugins: [{
+      				beforeDraw: function(c) {
+         			var chartHeight = c.chart.height;
+         			c.scales['y-axis-0'].options.ticks.fontSize = chartHeight * 2.5 / 100; //fontSize: 3% of canvas height
+         			/*c.scales['x-axis-0'].options.ticks.fontSize = chartHeight * 2.5 / 100; //fontSize: 3% of canvas height*/
+      				}
+   				}],
+		};
+/* --------------------------------- */	
+
+/*-----------------------------------------------------------------------------------------------------------------------------------------*/
+var prev_handler = window.onload;
+				window.onload = function() {
+			
+				var ctx = document.getElementById('canvas8').getContext('2d');
+				window.myLine = new Chart(ctx, graf8);
+				};
+</script>
+
+		<div style="overflow-x:auto;">
+            <table class="scrooltabela">
+            <tbody>
+            <thead>
+              <tr>
+                <th colspan="25">PM<sub>10</sub></th>
+              </tr>
+            </thead>  
+              <tr>
+                <th>datum</th>
+                <th>0:00 </th>
+                <th>1:00 </th>
+                <th>2:00 </th>
+                <th>3:00 </th>
+                <th>4:00 </th>
+                <th>5:00 </th>
+                <th>6:00 </th>
+                <th>7:00 </th>
+                <th>8:00 </th>
+                <th>9:00 </th>
+                <th>10:00</th>
+                <th>11:00</th>
+                <th>12:00</th>
+                <th>13:00</th>
+                <th>14:00</th>
+                <th>15:00</th>
+                <th>16:00</th>
+                <th>17:00</th>
+                <th>18:00</th>
+                <th>19:00</th>
+                <th>20:00</th>
+                <th>21:00</th>
+                <th>22:00</th>
+                <th>23:00</th>
+              </tr>
+              
+              <tr>
+                <th>12.8.2024.</th>
+                <td id="n">43.23</td>
+                <td id="n">41.22</td>
+                <td id="n">42.39</td>
+                <td id="n">44.11</td>
+                <td id="n">42.17</td>
+                <td id="n">41.95</td>
+                <td id="n">38.09</td>
+                <td id="n">37.72</td>
+                <td id="gv">62.2</td>
+                <td id="gv">87.52</td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+              </tr>
+              <tr>
+                <th>11.8.2024.</th>
+                <td id="n">16.76</td>
+                <td id="n">13.72</td>
+                <td id="n">13.03</td>
+                <td id="n">15.34</td>
+                <td id="n">15.49</td>
+                <td id="n">14.75</td>
+                <td id="n">15.78</td>
+                <td id="n">16.33</td>
+                <td id="n">23.31</td>
+                <td id="n">39.47</td>
+                <td id="gv">50.38</td>
+                <td id="n">32.59</td>
+                <td id="n">27.29</td>
+                <td id="n">18.34</td>
+                <td id="n">20.03</td>
+                <td id="n">20.46</td>
+                <td id="n">45.26</td>
+                <td id="n">27.88</td>
+                <td id="n">17.27</td>
+                <td id="n">23.46</td>
+                <td id="n">33.06</td>
+                <td id="n">36.73</td>
+                <td id="n">32.72</td>
+                <td id="n">36.61</td>
+              </tr>
+              <tr>
+                <th>10.8.2024.</th>
+                <td id="n">39.6</td>
+                <td id="n">31.72</td>
+                <td id="n">42.14</td>
+                <td id="n">35.19</td>
+                <td id="n">26.39</td>
+                <td id="n">20.08</td>
+                <td id="n">17.1</td>
+                <td id="n">16.78</td>
+                <td id="n">30.11</td>
+                <td id="n">36.53</td>
+                <td id="n">46.49</td>
+                <td id="n">39.52</td>
+                <td id="gv">63.05</td>
+                <td id="n">39.46</td>
+                <td id="n">27.28</td>
+                <td id="n">25.28</td>
+                <td id="n">17.46</td>
+                <td id="n">23.04</td>
+                <td id="n">13.48</td>
+                <td id="n">15.87</td>
+                <td id="n">18.55</td>
+                <td id="n">16.98</td>
+                <td id="n">16.31</td>
+                <td id="n">17.88</td>
+              </tr>
+              <tr>
+                <th>9.8.2024.</th>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="gv">57.8</td>
+                <td id="gv">61.7</td>
+                <td id="n">48.58</td>
+                <td id="n">22.37</td>
+                <td id="n">17.47</td>
+                <td id="n">17.3</td>
+                <td id="n">19.7</td>
+                <td id="n">24.9</td>
+                <td id="n">18.45</td>
+                <td id="n">21.18</td>
+                <td id="n">23.77</td>
+                <td id="n">15.7</td>
+                <td id="n">13.22</td>
+                <td id="n">13.05</td>
+                <td id="n">24.52</td>
+              </tr>
+              <tr>
+                <th></th>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n">32.85</td>
+              </tr>
+              <tr>
+                <th>23.7.2024.</th>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n">31.36</td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n">42.13</td>
+              </tr>  
+                
+             
+              </tbody>
+            </table>
+		</div>
+        <script>if (prev_handler) {prev_handler();}</script>
+        <canvas id="canvas8" class="chartjs" width="300" height="90"></canvas>
+  </div>
+<!-------------------------------------------------------------------->
+  <div class="gradovi" id="gradovi90" style="display: none"> 
+	<br>     Broj satnih vrijednosti lebdećih čestica (PM<sub>2.5</sub>) većih od 25 &micro;g/m<sup>3</sup> u periodu od: 23.7.2024. do 12.8.2024. je <strong>21</strong>
+<script>
+		
+			var graf9 = {
+			type: 'line',
+			data: {
+					datasets: [
+					{
+					label: 'PM25',
+					fill: false,
+					backgroundColor: 'rgba(0, 119, 190, 0.2)',
+         			borderColor: 'rgba(0, 119, 190, 0.6)',
+					borderWidth: 2,
+					pointRadius: 2,
+					pointHoverRadius: 5,
+					data: [26.74000,21.64900,17.47700,25.46800,22.31200,19.72500,22.47300,24.71900,23.88900,26.11300,33.56600,36.80100,33.73500,40.61300,56.83200,47.01000,null,34.49000,30.35500,10.15800,9.22500,10.48500,13.27100,11.54100,12.91400,13.55000,13.66000,14.16400,14.28100,16.97600,13.93400,13.71400,14.58700,16.72500,15.72100,13.32500,15.06700,15.28100,17.66100,19.76600,11.16600,7.69300,9.03900,11.51800,13.16700,18.64100,null,null,23.86500,23.77200,26.44300,28.26700,23.45500,15.56000,12.29600,9.80900,9.69300,15.27100,11.79000,14.38900,13.63500,8.90900,8.90300,7.43500,14.62900,25.44100,23.49600,33.81800,29.49700,22.11500,13.05000,11.30800,13.00200,15.86200,19.04700,21.26200,18.75700,31.55900,28.40600,16.06300,16.78200,12.20300,16.63000,8.20500,9.92400,10.24500,8.77800,8.02900,8.39500,9.30500,8.60200,8.54500,9.91500,10.54300,11.25000,11.93500,12.23800,14.83700,22.21300,23.64800,17.62000,15.43800,12.25000,14.19900,14.19100,35.59800,21.31800,12.69800,17.41900,25.16400,24.59100,26.31800,28.41600,34.59000,35.78500,36.62000,38.24500,37.95600,37.37200,34.32000,32.87500,37.77000,43.18000],
+					}
+					]
+			},
+			options: {
+				responsive: true,
+				maintainAspectRatio : true,
+				legend:{position: 'top'},
+				title: {
+					display: true,
+					text: 'automatska mjerna stanica Tetovo',
+				},
+				tooltips: {
+					mode: 'index',
+					intersect: false,
+						
+				},
+				hover: {
+					mode: 'nearest',
+					intersect: true
+				},
+				scales: {
+      				xAxes:[
+						  {
+          					id:'xAxis1',
+          					type:"category",
+          					labels:[20,21,22,23,00,01,02,03,04,05,06,07,08,09,10,11,12,13,14,15,16,17,18,19,20,21,22,23,00,01,02,03,04,05,06,07,08,09,10,11,12,13,14,15,14,08,09,10,11,11,09,10,11,12,13,14,15,16,17,18,19,20,21,22,23,00,01,02,03,04,05,06,07,08,09,10,11,12,13,14,15,16,17,18,19,20,21,22,23,00,01,02,03,04,05,06,07,08,09,10,11,12,13,14,15,16,17,18,19,20,21,22,23,00,01,02,03,04,05,06,07,08,09]
+        				 },
+        				 {
+          					id:'xAxis2',
+          					type:"category",
+							labels:['','','','','20.07.2024.','','','','','','','','','','','','','','','','','','','','','','','','21.07.2024.','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','10.08.2024.','','','','','','','','','','','','','','','','','','','','','','','','11.08.2024.','','','','','','','','','','','','','','','','','','','','','','','','12.08.2024.','','','','','','','','',''],
+							ticks: {
+                					autoSkip: false,
+                					maxRotation: 0,
+                					minRotation: 0
+           							}
+        				}],
+    
+					yAxes: [{
+						ticks: {
+                   			 	padding: 10,
+                				},
+						display: true,
+						scaleLabel: {
+							display: true,
+							labelString: 'PM25 (micro g/m3)',
+							
+						}
+					}]
+				}
+			},
+			   plugins: [{
+      				beforeDraw: function(c) {
+         			var chartHeight = c.chart.height;
+         			c.scales['y-axis-0'].options.ticks.fontSize = chartHeight * 2.5 / 100; //fontSize: 3% of canvas height
+         			/*c.scales['x-axis-0'].options.ticks.fontSize = chartHeight * 2.5 / 100; //fontSize: 3% of canvas height*/
+      				}
+   				}],
+		};
+/* --------------------------------- */	
+
+/*-----------------------------------------------------------------------------------------------------------------------------------------*/
+var prev_handler = window.onload;
+				window.onload = function() {
+			
+				var ctx = document.getElementById('canvas9').getContext('2d');
+				window.myLine = new Chart(ctx, graf9);
+				};
+</script>
+
+		<div style="overflow-x:auto;">
+            <table class="scrooltabela">
+            <tbody>
+            <thead>
+              <tr>
+                <th colspan="25">PM<sub>2.5</sub></th>
+              </tr>
+            </thead>  
+              <tr>
+                <th>datum</th>
+                <th>0:00 </th>
+                <th>1:00 </th>
+                <th>2:00 </th>
+                <th>3:00 </th>
+                <th>4:00 </th>
+                <th>5:00 </th>
+                <th>6:00 </th>
+                <th>7:00 </th>
+                <th>8:00 </th>
+                <th>9:00 </th>
+                <th>10:00</th>
+                <th>11:00</th>
+                <th>12:00</th>
+                <th>13:00</th>
+                <th>14:00</th>
+                <th>15:00</th>
+                <th>16:00</th>
+                <th>17:00</th>
+                <th>18:00</th>
+                <th>19:00</th>
+                <th>20:00</th>
+                <th>21:00</th>
+                <th>22:00</th>
+                <th>23:00</th>
+              </tr>
+              
+              <tr>
+                <th>12.8.2024.</th>
+                <td id="gv">34.59</td>
+                <td id="gv">35.79</td>
+                <td id="gv">36.62</td>
+                <td id="gv">38.25</td>
+                <td id="gv">37.96</td>
+                <td id="gv">37.37</td>
+                <td id="gv">34.32</td>
+                <td id="gv">32.88</td>
+                <td id="gv">37.77</td>
+                <td id="gv">43.18</td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+              </tr>
+              <tr>
+                <th>11.8.2024.</th>
+                <td id="n">9.31</td>
+                <td id="n">8.6</td>
+                <td id="n">8.55</td>
+                <td id="n">9.92</td>
+                <td id="n">10.54</td>
+                <td id="n">11.25</td>
+                <td id="n">11.94</td>
+                <td id="n">12.24</td>
+                <td id="n">14.84</td>
+                <td id="n">22.21</td>
+                <td id="n">23.65</td>
+                <td id="n">17.62</td>
+                <td id="n">15.44</td>
+                <td id="n">12.25</td>
+                <td id="n">14.2</td>
+                <td id="n">14.19</td>
+                <td id="gv">35.6</td>
+                <td id="n">21.32</td>
+                <td id="n">12.7</td>
+                <td id="n">17.42</td>
+                <td id="gv">25.16</td>
+                <td id="n">24.59</td>
+                <td id="gv">26.32</td>
+                <td id="gv">28.42</td>
+              </tr>
+              <tr>
+                <th>10.8.2024.</th>
+                <td id="gv">25.44</td>
+                <td id="n">23.5</td>
+                <td id="gv">33.82</td>
+                <td id="gv">29.5</td>
+                <td id="n">22.12</td>
+                <td id="n">13.05</td>
+                <td id="n">11.31</td>
+                <td id="n">13</td>
+                <td id="n">15.86</td>
+                <td id="n">19.05</td>
+                <td id="n">21.26</td>
+                <td id="n">18.76</td>
+                <td id="gv">31.56</td>
+                <td id="gv">28.41</td>
+                <td id="n">16.06</td>
+                <td id="n">16.78</td>
+                <td id="n">12.2</td>
+                <td id="n">16.63</td>
+                <td id="n">8.21</td>
+                <td id="n">9.92</td>
+                <td id="n">10.25</td>
+                <td id="n">8.78</td>
+                <td id="n">8.03</td>
+                <td id="n">8.4</td>
+              </tr>
+              <tr>
+                <th>9.8.2024.</th>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="gv">26.44</td>
+                <td id="gv">28.27</td>
+                <td id="n">23.46</td>
+                <td id="n">15.56</td>
+                <td id="n">12.3</td>
+                <td id="n">9.81</td>
+                <td id="n">9.69</td>
+                <td id="n">15.27</td>
+                <td id="n">11.79</td>
+                <td id="n">14.39</td>
+                <td id="n">13.64</td>
+                <td id="n">8.91</td>
+                <td id="n">8.9</td>
+                <td id="n">7.44</td>
+                <td id="n">14.63</td>
+              </tr>
+              <tr>
+                <th></th>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n">23.77</td>
+              </tr>
+              <tr>
+                <th>23.7.2024.</th>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n">18.64</td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n"></td>
+                <td id="n">23.87</td>
+              </tr>  
+                
+             
+              </tbody>
+            </table>
+		</div>
+      <script>if (prev_handler) {prev_handler();}</script>
+        <canvas id="canvas9" class="chartjs" width="300" height="90"></canvas>
+  </div>
+<!-------------------------------------------------------------------->
+  
+</div>
+
+            </div>
+            <div class="spacer"></div>
+            
+             
+			</div>
+            <!---->
+            <div class="spacer"></div>
+			
+            <!---->
+         </div>
+        </div>
+		<div class="column-1-3">
+        		<div class="white-box">
+                <div class="box-title">&nbsp;KVALITET ZRAKA</div>
+        		  <style>
+ #zrak {
+      border-collapse: separate;
+   }
+#thzrak {
+	  padding-left:5px;
+      border-color: #777;
+	  background:#AABCE6;
+	  border-top: thin dotted #999999;
+   }
+</style>            
+<table width="96%" border="0" cellspacing="0" id="zrak">
+  <tr>
+    <td colspan="3"><a href="/latinica/ZRAK/saopcenje.php">Obavještenje za javnost</a></td>
+  </tr>
+  <tr>
+    <td colspan="3"><a href="/latinica/ZRAK/AQI-satne.php">Index i satne vrijednosti</a></td>
+  </tr>
+  <tr>
+    <th colspan="3" id="thzrak">Satne vrijednosti za stanice:</th>
+  </tr>
+  <tr>
+    <th rowspan="5" id="thzrak">KS</th>
+    <td><a href="amsISedlo.php">IvanSedlo</a></td>
+    <td><a href="amsHadzici.php">Hadžići</a></td>
+  </tr>
+  <tr>
+    <td><a href="amsIlidza.php">Ilidža</a></td>
+    <td><a href="amsSPolje.php">Saraj Polje</a></td>
+  </tr>
+  <tr>
+    <td><a href="amsOtoka.php">Otoka</a></td>
+    <td><a href="amsVijecnica.php">Vijećnica</a></td>
+  </tr>
+  <tr>
+    <td><a href="amsBjelave.php">Bjelave</a></td>
+    <td><a href="amsVogosca.php">Vogošća</a></td>
+  </tr>
+  <tr>
+    <td><a href="amsIlijas.php">Ilijaš</a></td>
+    <td>&nbsp;</td>
+  </tr>
+  <tr>
+    <th rowspan="6" id="thzrak">ZDK</th>
+    <td><a href="amsVisoko.php">Visoko</a></td>
+    <td><!--<a href="amsKakanjDoboj.php">KakanjDoboj </a>--></td>
+  </tr>
+  <tr>
+    <td><a href="amsKakanj.php">KakanjCentar</a></td>
+    <td><a href="amsKakanjOpcina.php">KakanjOpćina</a></td>
+  </tr>
+  <tr>
+    <td ><a href="amsVares.php">Vareš</a></td>
+    <td><a href="amsBrist.php">Brist</a></td>
+  </tr>
+  <tr>
+    <td><a href="amsTetovo.php">Tetovo</a></td>
+    <td><a href="amsCentarZE.php">Zenica centar</a></td>
+  </tr>
+  <tr>
+    <td><a href="amsRadakovo.php">Radakovo</a></td>
+    <td><a href="amsVranduk.php">Vranduk</a></td>
+  </tr>
+  <tr>
+    <td><a href="amsMaglaj.php">Maglaj </a></td>
+    <td><a href="amsTesanj.php">Tešanj</a></td>
+  </tr>
+  <tr>
+    <th  id="thzrak">SBK</th>
+    <td ><a href="amsTravnik.php">Travnik</a></td>
+    <td><a href="amsJajce.php">Jajce</a></td>
+  </tr>
+  <tr>
+    <th  id="thzrak">BPK</th>
+    <td colspan="2"><a href="amsGorazde.php">Goražde</a></td>
+  </tr>
+  <tr>
+    <th  id="thzrak">USK</th>
+    <td colspan="2"><a href="amsBihac.php">Bihać</a></td>
+  </tr>
+  <tr>
+    <th  id="thzrak">K10</th>
+    <td colspan="2"><a href="amsLivno.php">Livno</a></td>
+  </tr>
+  <tr>
+    <th  id="thzrak">HNK</th>
+    <td><a href="amsMostar.php">Mostar B.Brijeg</a></td>
+    <td><a href="amsMostarHNK.php">Mostar kampus</a></td>
+  </tr>
+  <tr>
+  	<th rowspan="3"  id="thzrak">TK</th>
+  	<td><a href="amsZivinice.php">Živinice</a></td>
+  	<td><a href="amsTrnovac.php">Trnovac</a></td>
+  </tr>
+  <tr>
+  	<td><a href="amsSkver.php">Skver</a></td>
+  	<td><a href="amsBKC.php">BKC</a></td>
+  </tr>
+   <tr>
+  	<td><a href="amsBukinje.php">Bukinje</a></td>
+  	<td><a href="amsLukavac.php">Lukavac</a></td>
+  </tr>
+
+    </tr>
+  <tr>
+    <th colspan="3" id="thzrak">Prosječne dnevne vrijednosti:</th>
+    </tr>
+  <tr>
+    <td><a href="/latinica/ZRAK/dnevne.php">dnevne</a></td>
+    <td><a href="/latinica/ZRAK/sdv-polutanti.php">30-o dnevne</a></td>
+    <td><a href="/latinica/ZRAK/sdv-mjesecni.php">mjesečne</a></td>
+  </tr>
+  <tr>
+    <th rowspan="5" id="thzrak">KS</th>
+    <td><a href="sdv-ISedlo.php">IvanSedlo</a></td>
+    <td><a href="sdv-Hadzici.php">Hadžići</a></td>
+  </tr>
+  <tr>
+    <td><a href="sdv-Ilidza.php">Ilidža</a></td>
+    <td><a href="sdv-SPolje.php">Saraj Polje</a></td>
+  </tr>
+  <tr>
+    <td><a href="sdv-Otoka.php">Otoka</a></td>
+    <td><a href="sdv-Vijecnica.php">Vijećnica</a></td>
+  </tr>
+  <tr>
+    <td><a href="sdv-Bjelave.php">Bjelave</a></td>
+    <td><a href="sdv-Vogosca.php">Vogošća</a></td>
+  </tr>
+  <tr>
+    <td><a href="sdv-Ilijas.php">Ilijaš</a></td>
+    <td>&nbsp;</td>
+  </tr>
+  <tr>
+    <th rowspan="6" id="thzrak">ZDK</th>
+    <td><a href="sdv-Visoko.php">Visoko</a></td>
+    <td><!--<a href="sdv-KakanjDoboj.php">KakanjDoboj </a>--></td>
+  </tr>
+  <tr>
+    <td><a href="sdv-KakanjCE.php">Kakanj centar</a></td>
+    <td><a href="sdv-KakanjOP.php">Kakanj općina</a></td>
+  </tr>
+  <tr>
+    <td ><a href="sdv-Vares.php">Vareš</a></td>
+    <td><a href="sdv-Brist.php">Brist</a></td>
+  </tr>
+  <tr>
+    <td><a href="sdv-Tetovo.php">Tetovo</a></td>
+    <td><a href="sdv-Centar.php">Zenica centar</a></td>
+  </tr>
+  <tr>
+    <td><a href="sdv-Radakovo.php">Radakovo</a></td>
+    <td><a href="sdv-Vranduk.php">Vranduk</a></td>
+  </tr>
+  <tr>
+    <td><a href="sdv-Maglaj.php">Maglaj </a></td>
+    <td><a href="sdv-Tesanj.php">Tešanj</a></td>
+  </tr>
+  <tr>
+    <th  id="thzrak">SBK</th>
+    <td ><a href="sdv-Travnik.php">Travnik</a></td>
+    <td><a href="sdv-Jajce.php">Jajce</a></td>
+  </tr>
+  <tr>
+    <th  id="thzrak">BPK</th>
+    <td colspan="2"><a href="sdv-Gorazde.php">Goražde</a></td>
+  </tr>
+  <tr>
+    <th  id="thzrak">USK</th>
+    <td colspan="2"><a href="sdv-Bihac.php">Bihać</a></td>
+  </tr>
+  <tr>
+    <th  id="thzrak">K10</th>
+    <td colspan="2"><a href="sdv-Livno.php">Livno</a></td>
+  </tr>
+  <tr>
+    <th  id="thzrak">HNK</th>
+    <td><a href="sdv-Mostar.php">Mostar B.Brijeg</a></td>
+    <td><a href="sdv-MostarHNK.php">Mostar kampus</a></td>
+  </tr>
+  <tr>
+  	<th rowspan="3"  id="thzrak">TK</th>
+  	<td><a href="sdv-Zivinice.php">Živinice</a></td>
+  	<td><a href="sdv-Trnovac.php">Trnovac</a></td>
+  </tr>
+  <tr>
+  	<td><a href="sdv-Skver.php">Skver</a></td>
+  	<td><a href="sdv-BKC.php">BKC</a></td>
+  </tr>
+   <tr>
+  	<td><a href="sdv-Bukinje.php">Bukinje</a></td>
+  	<td><a href="sdv-Lukavac.php">Lukavac</a></td>
+  </tr>
+  <tr>
+    <td colspan="3"><a href="/latinica/ZRAK/AQI-efekti.php">Mogući efekti na zdravlje i preporuke</a></td>
+    </tr>
+  <tr>
+    <td colspan="3"><a href="/latinica/ZRAK/AQI-metodologija.php">Metodologija izrade indeksa kvaliteta zraka</a></td>
+    </tr>
+  <tr>
+    <td colspan="3"><a href="/latinica/ZRAK/regulativa.php">Zakonska regulativa</a></td>
+    </tr>
+  <tr>
+    <td colspan="3"><a href="/latinica/ZRAK/izvjestaji.php">Izvještaji</a></td>
+    </tr>
+</table>
+                           		  </div>
+   		</div>
+      <!--/end .column-1-3 -->       
+      
+         
+         
+      </div>
+      </div>
+      <div class="clearer"></div>
+      <div class="spacer"></div>
+ 	  <div id="footer"></div>
+    </div>  
+  </div>
+
+
+</body>
+</html>
