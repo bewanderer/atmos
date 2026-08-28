@@ -10,24 +10,15 @@ Page layout, confirmed against fetched fixtures:
     <table>  datum | 0:00 ... 23:00   <- header, then 6 data rows, newest first
              28.8.2026. | 17.86 | ...
 
-Three things the fixtures taught us, all of which the parser has to handle:
+Three quirks the parser has to handle:
 
-1. Pollutant sets differ by station. Vijecnica publishes 6, Tetovo publishes 8.
-   We read whatever is present rather than assuming a fixed set.
+1. Pollutant sets differ by station. Vijecnica has 6, Tetovo has 8.
+2. NOx tables have values but a blank date column. Dates come from a sibling
+   table at the same row, flagged date_inferred. Undated rows are dropped.
+3. Some pages are years out of date. Tetovo served 2024 data in 2026, so dates
+   are always read, never assumed from row position.
 
-2. NOx tables carry values but leave the date column completely blank, on every
-   station page checked. Those dates are taken from a sibling table at the same
-   row position and the observations are flagged date_inferred. Where no table
-   on the page dates a row, its values are dropped rather than guessed.
-
-3. Not every page is live. Zenica Tetovo was serving August 2024 data when
-   fetched in August 2026, and its rows are not even a contiguous window. So
-   dates are always read, never assumed from position in the window. Staleness
-   is left for monitoring to detect and report, since a reference station that
-   has published nothing for two years is a finding in its own right.
-
-Exceedance summary tables are ignored. We derive exceedances from concentrations
-ourselves, consistently with computing every index rather than ingesting one.
+Exceedance tables are ignored. We work those out from concentrations.
 """
 
 from __future__ import annotations
@@ -49,9 +40,9 @@ from atmos.connectors.base import (
 # Hour labels on the page are local wall clock, with no timezone stated anywhere.
 LOCAL_TZ = ZoneInfo("Europe/Sarajevo")
 
-# Page name -> human readable station name. Taken from the station links on
-# AQI-satne.php. Refresh with discover_stations() rather than editing blind,
-# since the site's own station count is inconsistent across its pages.
+# Page name -> station name, from the links on AQI-satne.php.
+# Use discover_stations() to refresh. The site disagrees with itself on how
+# many stations it has.
 STATIONS: dict[str, str] = {
     "amsVijecnica": "Sarajevo Vijecnica",
     "amsBjelave": "Sarajevo Bjelave",
@@ -88,8 +79,7 @@ STATIONS: dict[str, str] = {
     "amsLukavac": "Lukavac Centar",
 }
 
-# Their label -> our parameter code. Anything unlisted is ignored rather than
-# guessed at, and reported as a warning so we notice a new pollutant appearing.
+# Their label -> our code. Unlisted labels are ignored, not guessed at.
 PARAMETERS: dict[str, str] = {
     "SO2": "so2",
     "NO2": "no2",
@@ -102,10 +92,8 @@ PARAMETERS: dict[str, str] = {
     "PM2,5": "pm25",
 }
 
-# Everything on these pages is published in ug/m3, including CO. That is worth
-# stating because CO is conventionally reported in mg/m3 and Tuzla Canton does
-# exactly that. Observed CO here runs 300 to 3100, which is only sensible as
-# ug/m3. Conversion to canonical units happens downstream, not in the parser.
+# Everything here is ug/m3, including CO. Worth flagging because Tuzla Canton
+# publishes CO in mg/m3. Conversion happens downstream, not in the parser.
 PUBLISHED_UNIT = "ug/m3"
 
 BASE = "https://www.fhmzbih.gov.ba/latinica/ZRAK"
@@ -129,12 +117,7 @@ def _rows(table_html: str) -> list[list[str]]:
 
 
 def _normalise_label(label: str) -> str:
-    """Pollutant label to lookup key.
-
-    Whitespace is stripped entirely, not just trimmed. Most stations write PM10,
-    but Vares marks its pollutants up with subscripts that flatten to 'PM 10'.
-    Matching on the trimmed string alone silently dropped that whole station.
-    """
+    """Label to lookup key. Strips all whitespace, not just the ends."""
     return re.sub(r"\s+", "", label).upper()
 
 
@@ -167,11 +150,25 @@ class FhmzConnector:
         )
 
     def stations(self, raw: bytes, target: FetchTarget) -> list[ParsedStation]:
-        # The pages carry no coordinates. Name only; siting is filled in separately.
+        # No coordinates on these pages. They are in the annual reports.
         name = STATIONS.get(target.id)
         if not name:
             return []
-        return [ParsedStation(source_station_id=target.id, name=name)]
+
+        # Read from page structure, not values. Vares has empty PM tables.
+        try:
+            html = raw.decode("utf-8")
+        except UnicodeDecodeError:
+            html = raw.decode("windows-1250", errors="replace")
+        declared = tuple(dict.fromkeys(code for code, _ in self._pollutant_tables(html)))
+
+        return [
+            ParsedStation(
+                source_station_id=target.id,
+                name=name,
+                declared_parameters=declared,
+            )
+        ]
 
     def parse(self, raw: bytes, target: FetchTarget) -> list[ParsedObservation]:
         try:
@@ -187,8 +184,7 @@ class FhmzConnector:
                 snippet=raw[:500],
             )
 
-        # NOx tables carry values but no dates, so the date has to come from a
-        # sibling table at the same row position. Only safe because every dated
+        # NOx has no dates of its own. Safe to borrow because every dated
         # table on a page lists the same days in the same order.
         sequence = self._date_sequence(tables)
 
@@ -210,11 +206,7 @@ class FhmzConnector:
 
     @staticmethod
     def _pollutant_tables(html: str) -> list[tuple[str, list[list[str]]]]:
-        """Tables that hold hourly values, as (parameter code, rows).
-
-        Exceedance summary tables are excluded here: they have a different shape
-        and we derive exceedances from concentrations ourselves.
-        """
+        """Hourly value tables, as (parameter code, rows). Skips summaries."""
         found: list[tuple[str, list[list[str]]]] = []
         for table in _TABLE.findall(html):
             rows = _rows(table)
@@ -231,10 +223,10 @@ class FhmzConnector:
 
     @staticmethod
     def _date_sequence(tables: list[tuple[str, list[list[str]]]]) -> list[date | None]:
-        """Merged day-per-row-position across every dated table on the page.
+        """Day per row position, merged across dated tables.
 
-        A position resolves only when the tables that date it agree. On conflict
-        it stays None and undated tables lose that row, which is the safe failure.
+        A row resolves only if the tables that date it agree. On conflict it
+        stays None and undated tables lose that row.
         """
         length = max((len(rows) - 2 for _, rows in tables), default=0)
         merged: list[date | None] = [None] * length
@@ -339,10 +331,8 @@ class FhmzConnector:
 def discover_stations(raw: bytes) -> list[str]:
     """Station page names linked from AQI-satne.php.
 
-    Kept separate from targets() because the site disagrees with itself about how
-    many stations exist: the hourly table shows 31, the links number 33, and the
-    daily page lists more. Running this against the live index tells us when the
-    set changes rather than us assuming it never does.
+    Separate from targets() so we notice when the set changes. The site's own
+    pages disagree: 31 in the hourly table, 33 links, more on the daily page.
     """
     html = raw.decode("utf-8", errors="replace")
     return sorted(set(re.findall(r'href="(ams[A-Za-z0-9]+)\.php"', html)))
