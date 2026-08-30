@@ -19,6 +19,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
+from decimal import Decimal
 
 import psycopg
 
@@ -29,6 +30,11 @@ from atmos.connectors.base import (
 )
 from atmos.core.fetch import FetchResult
 from atmos.core.units import UnknownConversion, convert
+
+# What we hold for one reading: (station, parameter, start, end).
+Key = tuple[int, int, datetime, datetime]
+# Its newest revision: (revision, value, unit, revision_kind, previous_value).
+State = tuple[int, Decimal | None, str, str | None, Decimal | None]
 
 
 @dataclass
@@ -146,68 +152,61 @@ def ingest_observations(
     seen_at: datetime | None = None,
     is_backfill: bool = False,
 ) -> IngestResult:
+    """Apply a batch of parsed readings.
+
+    Batched deliberately. A row at a time meant one round trip to read the
+    current state and more to write, and wrapping each write in a savepoint
+    added two more. Past 64 subtransactions Postgres spills its cache and
+    degrades progressively, so an eight hundred thousand row backfill crawled.
+    This reads the whole batch's state in one query and writes in one call.
+    """
     result = IngestResult(stations_seen=len(station_ids))
     now = seen_at or datetime.now(UTC)
-    # Confirmations are collected and sent once. Re-observing is the common
-    # case, and one round trip per row was the slowest thing ingest did.
-    pending: list[tuple[int, int, datetime, datetime, int]] = []
 
+    # Resolve and convert first. Anything unusable drops out here.
+    prepared: list[tuple[Key, ParsedObservation, Decimal, str]] = []
     for o in observations:
         station_id = station_ids.get(o.source_station_id)
         param_id = param_ids.get(o.parameter_code)
         if station_id is None or param_id is None:
             result.skipped.append(f"{o.source_station_id}/{o.parameter_code}")
             continue
-
         if o.value is None:
             # A parser has no business emitting a null. Withdrawals are recorded
             # by withdraw_missing, not by ingesting an empty reading.
             result.skipped.append(f"{o.source_station_id}/{o.parameter_code}: null value")
             continue
-
         try:
             value, unit, _factor = convert(o.value, o.unit, o.parameter_code)
         except UnknownConversion as e:
             # A wrong unit is worse than a missing reading, so refuse it.
             result.skipped.append(f"{o.source_station_id}/{o.parameter_code}: {e}")
             continue
+        prepared.append(((station_id, param_id, o.phenomenon_start,
+                          o.phenomenon_end), o, value, unit))
 
-        key = (station_id, param_id, o.phenomenon_start, o.phenomenon_end)
+    if not prepared:
+        return result
 
-        # Only the newest revision matters. Comparing against older ones would
-        # treat a source reverting to an earlier value as if nothing happened.
-        cur.execute(
-            """
-            select revision, value, unit, revision_kind, previous_value
-              from observations
-             where station_id = %s and parameter_id = %s
-               and phenomenon_start = %s and phenomenon_end = %s
-             order by revision desc
-             limit 1
-            """,
-            key,
-        )
-        latest = cur.fetchone()
+    existing = _current_state(cur, [k for k, _, _, _ in prepared])
+
+    to_insert: list[tuple[object, ...]] = []
+    to_confirm: list[tuple[int, int, datetime, datetime, int]] = []
+
+    for key, o, value, unit in prepared:
+        latest = existing.get(key)
 
         if latest is None:
-            # Another process may insert the same reading between this read and
-            # the write. A savepoint keeps that costing one row rather than the
-            # whole run, which on an eighty thousand row backfill matters.
-            try:
-                with cur.connection.transaction():
-                    _insert(cur, key, o, 1, None, None, fetch_id, parser_version,
-                            now, is_backfill, value, unit)
-                result.inserted += 1
-            except psycopg.errors.UniqueViolation:
-                pending.append((*key, 1))
-                result.confirmed += 1
+            to_insert.append(_row(key, o, 1, None, None, fetch_id,
+                                  parser_version, now, is_backfill, value, unit))
+            result.inserted += 1
             continue
 
         revision, stored_value, stored_unit, kind, prior = latest
 
         if kind != "withdrawal" and value == stored_value and unit == stored_unit:
             # Unchanged since we last looked. Count it, store nothing.
-            pending.append((*key, revision))
+            to_confirm.append((*key, revision))
             result.confirmed += 1
             continue
 
@@ -215,25 +214,96 @@ def ingest_observations(
         # withdrawal is a reinstatement; anything else is a change, including a
         # return to a value this reading held before.
         if kind == "withdrawal":
-            new_kind = "reinstatement"
-            # A withdrawal holds no value, so carry through what was withdrawn.
-            previous = prior
+            new_kind, previous = "reinstatement", prior
         else:
-            new_kind = "value_change"
-            previous = stored_value
+            new_kind, previous = "value_change", stored_value
 
-        try:
-            with cur.connection.transaction():
-                _insert(cur, key, o, revision + 1, new_kind, previous,
-                        fetch_id, parser_version, now, is_backfill, value, unit)
-            result.revisions += 1
-        except psycopg.errors.UniqueViolation:
-            # Someone else appended the same revision first. Theirs stands.
-            pending.append((*key, revision + 1))
-            result.confirmed += 1
+        to_insert.append(_row(key, o, revision + 1, new_kind, previous, fetch_id,
+                              parser_version, now, is_backfill, value, unit))
+        result.revisions += 1
 
-    _flush_confirmations(cur, pending, now)
+    _insert_many(cur, to_insert)
+    _flush_confirmations(cur, to_confirm, now)
     return result
+
+
+def _current_state(
+    cur: psycopg.Cursor,
+    keys: list[Key],
+) -> dict[Key, State]:
+    """Newest revision held for each key, in one query rather than one each.
+
+    Only the newest matters: comparing against older revisions would treat a
+    source reverting to an earlier value as if nothing had happened.
+    """
+    state: dict[Key, State] = {}
+    chunk = 10000
+    for i in range(0, len(keys), chunk):
+        part = keys[i : i + chunk]
+        cur.execute(
+            """
+            select distinct on (o.station_id, o.parameter_id,
+                                o.phenomenon_start, o.phenomenon_end)
+                   o.station_id, o.parameter_id, o.phenomenon_start,
+                   o.phenomenon_end, o.revision, o.value, o.unit,
+                   o.revision_kind, o.previous_value
+              from observations o
+              join unnest(%s::bigint[], %s::smallint[],
+                          %s::timestamptz[], %s::timestamptz[])
+                as w(station_id, parameter_id, phenomenon_start, phenomenon_end)
+                on w.station_id = o.station_id
+               and w.parameter_id = o.parameter_id
+               and w.phenomenon_start = o.phenomenon_start
+               and w.phenomenon_end = o.phenomenon_end
+             order by o.station_id, o.parameter_id, o.phenomenon_start,
+                      o.phenomenon_end, o.revision desc
+            """,
+            (
+                [k[0] for k in part],
+                [k[1] for k in part],
+                [k[2] for k in part],
+                [k[3] for k in part],
+            ),
+        )
+        for row in cur.fetchall():
+            state[(row[0], row[1], row[2], row[3])] = (
+                row[4], row[5], row[6], row[7], row[8],
+            )
+    return state
+
+
+def _row(key: Key, o: ParsedObservation,
+         revision: int, kind: str | None, previous: object, fetch_id: int,
+         parser_version: str, now: datetime, is_backfill: bool,
+         value: object, unit: str) -> tuple[object, ...]:
+    """One row for the bulk insert. value and unit are canonical; raw_* keep
+    what the source published."""
+    return (*key, value, unit, o.raw_value, o.unit, revision, kind, previous,
+            now, now, fetch_id, parser_version, is_backfill,
+            list(o.quality_flags))
+
+
+def _insert_many(cur: psycopg.Cursor, rows: list[tuple[object, ...]],
+                 chunk: int = 5000) -> None:
+    """Write in batches, with no savepoints.
+
+    on conflict do nothing covers the race where another writer inserted the
+    same reading between our read and this write. That row is not lost, it is
+    theirs; we simply do not also count a confirmation for it.
+    """
+    if not rows:
+        return
+    sql = """
+        insert into observations
+          (station_id, parameter_id, phenomenon_start, phenomenon_end,
+           value, unit, raw_value, raw_unit, revision, revision_kind,
+           previous_value, first_seen_at, last_confirmed_at, fetch_id,
+           parser_version, is_backfill, quality_flags)
+        values (%s,%s,%s,%s, %s,%s,%s,%s, %s,%s,%s, %s,%s,%s,%s, %s,%s)
+        on conflict do nothing
+    """
+    for i in range(0, len(rows), chunk):
+        cur.executemany(sql, rows[i : i + chunk])
 
 
 def _flush_confirmations(
@@ -256,24 +326,6 @@ def _flush_confirmations(
                 now,
             ),
         )
-
-
-def _insert(cur: psycopg.Cursor, key: tuple[object, ...], o: ParsedObservation, revision: int,
-            kind: str | None, previous: object, fetch_id: int, parser_version: str,
-            now: datetime, is_backfill: bool, value: object, unit: str) -> None:
-    """value and unit are canonical. raw_value and raw_unit keep what the source said."""
-    cur.execute(
-        """
-        insert into observations
-          (station_id, parameter_id, phenomenon_start, phenomenon_end,
-           value, unit, raw_value, raw_unit, revision, revision_kind, previous_value,
-           first_seen_at, last_confirmed_at, fetch_id, parser_version,
-           is_backfill, quality_flags)
-        values (%s,%s,%s,%s, %s,%s,%s,%s, %s,%s,%s, %s,%s,%s,%s, %s,%s)
-        """,
-        (*key, value, unit, o.raw_value, o.unit, revision, kind, previous,
-         now, now, fetch_id, parser_version, is_backfill, list(o.quality_flags)),
-    )
 
 
 def withdraw_missing(
