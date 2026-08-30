@@ -83,6 +83,10 @@ _CELL = re.compile(r"<t[dh][^>]*>(.*?)</t[dh]>", re.S | re.I)
 _TAG = re.compile(r"<[^>]+>")
 _HOUR = re.compile(r"^\s*(\d{1,2}):00\s*$")
 _PAGE_DATE = re.compile(r"Satni\s+podaci:\s*(\d{2})\.(\d{2})\.(\d{4})")
+# The page names itself: "Skver", or "Mobilna: Kalesija" for the mobile unit.
+# This is the only reliable way to tell a page showing its own station from one
+# mirroring another. Matching values alone cannot distinguish the two.
+_PAGE_LABEL = re.compile(r"Mjerna\s+stanica\s+(.*?)\s+Kontinuirani", re.S)
 _UNIT = re.compile(r"\(([^)]+)\)")
 
 # Subscripts and superscripts, so SO₂ (µg/m³) compares as SO2 (ug/m3).
@@ -154,11 +158,13 @@ class TuzlaConnector:
         name = STATIONS.get(page)
         if not name:
             return []
-        columns = self._columns(self._data_table(raw.decode("utf-8", errors="replace")))
+        html = raw.decode("utf-8", errors="replace")
+        columns = self._columns(self._data_table(html))
         return [
             ParsedStation(
                 source_station_id=page,
-                name=name,
+                # Prefer what the page calls itself over our own mapping.
+                name=self.page_label(html) or name,
                 is_mobile=page in MOBILE,
                 declared_parameters=tuple(dict.fromkeys(c for c, _ in columns if c)),
             )
@@ -219,6 +225,20 @@ class TuzlaConnector:
                     )
                 )
         return out
+
+    @staticmethod
+    def page_label(html: str) -> str | None:
+        """What the page calls its own station.
+
+        `mobilna.html` and `mobilna-kalesija.html` both say "Mobilna: Kalesija"
+        while the unit is there, which is what proves they are one deployment
+        published twice. `mobilna-banovici.html` says "Mobilna: Banovici" and is
+        a different campaign entirely.
+        """
+        flat = re.sub(r"\s+", " ", _TAG.sub(" ", re.sub(
+            r"<(script|style)[^>]*>.*?</>", " ", html, flags=re.S | re.I)))
+        m = _PAGE_LABEL.search(flat)
+        return m.group(1).strip() if m else None
 
     @staticmethod
     def _page_date(html: str) -> date | None:
