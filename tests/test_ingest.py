@@ -9,18 +9,17 @@ ATMOS_TEST_DSN to run them, for example:
 from __future__ import annotations
 
 import datetime as dt
-import os
 from decimal import Decimal
 
 import pytest
 
 from atmos.connectors.base import ParsedObservation, ParsedStation
 from atmos.core import ingest as ing
+from tests.conftest import DSN, SKIP_REASON
 
 psycopg = pytest.importorskip("psycopg")
 
-DSN = os.environ.get("ATMOS_TEST_DSN")
-pytestmark = pytest.mark.skipif(not DSN, reason="ATMOS_TEST_DSN not set")
+pytestmark = pytest.mark.skipif(DSN is None, reason=SKIP_REASON)
 
 START = dt.datetime(2026, 1, 15, 10, tzinfo=dt.UTC)
 END = START + dt.timedelta(hours=1)

@@ -17,6 +17,7 @@ import pytest
 from typer.testing import CliRunner
 
 from atmos.cli import CONNECTORS, app
+from tests.conftest import DSN, requires_db
 
 runner = CliRunner()
 FIXTURES = Path(__file__).parent / "fixtures"
@@ -105,10 +106,7 @@ def test_ingest_without_a_dsn_exits(archived_run: Path) -> None:
     assert result.exit_code == 2
 
 
-DSN = os.environ.get("ATMOS_TEST_DSN")
-
-
-@pytest.mark.skipif(not DSN, reason="ATMOS_TEST_DSN not set")
+@requires_db
 def test_ingest_loads_an_archive_and_is_idempotent(archived_run: Path) -> None:
     first = runner.invoke(app, ["ingest", "--connector", "fhmz",
                                 "--path", str(archived_run), "--dsn", DSN])
@@ -157,7 +155,7 @@ def backfill_run(tmp_path: Path) -> Path:
     return run
 
 
-@pytest.mark.skipif(not DSN, reason="ATMOS_TEST_DSN not set")
+@requires_db
 def test_ingest_reads_backfill_archives(backfill_run: Path) -> None:
     """Backfill files are CSV, not the JSON the live parser expects."""
     result = runner.invoke(app, ["ingest", "--connector", "sensorcommunity",
@@ -167,7 +165,7 @@ def test_ingest_reads_backfill_archives(backfill_run: Path) -> None:
     assert "new" in result.output
 
 
-@pytest.mark.skipif(not DSN, reason="ATMOS_TEST_DSN not set")
+@requires_db
 def test_backfilled_rows_are_marked_as_such(backfill_run: Path) -> None:
     """So historical loads are never confused with what we watched happen live."""
     import psycopg

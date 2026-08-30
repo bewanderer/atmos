@@ -61,4 +61,4 @@ warn_return_any = true
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 # So the suite runs the same whether or not the package is installed.
-pythonpath = ["src"]
+pythonpath = ["src", "."]
