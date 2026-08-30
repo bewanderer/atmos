@@ -148,6 +148,9 @@ def ingest_observations(
 ) -> IngestResult:
     result = IngestResult(stations_seen=len(station_ids))
     now = seen_at or datetime.now(UTC)
+    # Confirmations are collected and sent once. Re-observing is the common
+    # case, and one round trip per row was the slowest thing ingest did.
+    pending: list[tuple[int, int, datetime, datetime, int]] = []
 
     for o in observations:
         station_id = station_ids.get(o.source_station_id)
@@ -187,17 +190,24 @@ def ingest_observations(
         latest = cur.fetchone()
 
         if latest is None:
-            _insert(cur, key, o, 1, None, None, fetch_id, parser_version, now,
-                    is_backfill, value, unit)
-            result.inserted += 1
+            # Another process may insert the same reading between this read and
+            # the write. A savepoint keeps that costing one row rather than the
+            # whole run, which on an eighty thousand row backfill matters.
+            try:
+                with cur.connection.transaction():
+                    _insert(cur, key, o, 1, None, None, fetch_id, parser_version,
+                            now, is_backfill, value, unit)
+                result.inserted += 1
+            except psycopg.errors.UniqueViolation:
+                pending.append((*key, 1))
+                result.confirmed += 1
             continue
 
         revision, stored_value, stored_unit, kind, prior = latest
 
         if kind != "withdrawal" and value == stored_value and unit == stored_unit:
             # Unchanged since we last looked. Count it, store nothing.
-            cur.execute("select confirm_observation(%s,%s,%s,%s,%s,%s)",
-                        (*key, revision, now))
+            pending.append((*key, revision))
             result.confirmed += 1
             continue
 
@@ -212,11 +222,40 @@ def ingest_observations(
             new_kind = "value_change"
             previous = stored_value
 
-        _insert(cur, key, o, revision + 1, new_kind, previous,
-                fetch_id, parser_version, now, is_backfill, value, unit)
-        result.revisions += 1
+        try:
+            with cur.connection.transaction():
+                _insert(cur, key, o, revision + 1, new_kind, previous,
+                        fetch_id, parser_version, now, is_backfill, value, unit)
+            result.revisions += 1
+        except psycopg.errors.UniqueViolation:
+            # Someone else appended the same revision first. Theirs stands.
+            pending.append((*key, revision + 1))
+            result.confirmed += 1
 
+    _flush_confirmations(cur, pending, now)
     return result
+
+
+def _flush_confirmations(
+    cur: psycopg.Cursor,
+    pending: list[tuple[int, int, datetime, datetime, int]],
+    now: datetime,
+    chunk: int = 5000,
+) -> None:
+    """Send collected confirmations in a few calls rather than thousands."""
+    for i in range(0, len(pending), chunk):
+        batch = pending[i : i + chunk]
+        cur.execute(
+            "select confirm_observations(%s,%s,%s,%s,%s,%s)",
+            (
+                [b[0] for b in batch],
+                [b[1] for b in batch],
+                [b[2] for b in batch],
+                [b[3] for b in batch],
+                [b[4] for b in batch],
+                now,
+            ),
+        )
 
 
 def _insert(cur: psycopg.Cursor, key: tuple[object, ...], o: ParsedObservation, revision: int,

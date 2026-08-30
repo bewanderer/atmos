@@ -225,6 +225,11 @@ def ingest(
             cur.execute("select apply_range_flags()")
             row = cur.fetchone()
             flagged = int(row[0]) if row and row[0] is not None else 0
+            # Stuck instruments need neighbouring readings, so this runs after
+            # the batch has landed rather than per row.
+            cur.execute("select apply_sequence_flags(now() - interval '30 days')")
+            row = cur.fetchone()
+            flagged += int(row[0]) if row and row[0] is not None else 0
 
             cur.execute(
                 """insert into collector_runs

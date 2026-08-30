@@ -199,3 +199,31 @@ def test_backfill_rejects_a_connector_without_an_archive(tmp_path: Path) -> None
                                  "--path", str(run), "--dsn", "postgres://x"])
     assert result.exit_code == 2
     assert "archive format" in result.output
+
+
+def test_status_without_a_dsn_exits() -> None:
+    env = {k: v for k, v in os.environ.items() if k != "ATMOS_DATABASE_URL"}
+    result = runner.invoke(app, ["status"], env=env)
+    assert result.exit_code == 2
+
+
+@requires_db
+def test_status_reports_what_is_held(archived_run: Path) -> None:
+    runner.invoke(app, ["ingest", "--connector", "fhmz",
+                        "--path", str(archived_run), "--dsn", DSN])
+    result = runner.invoke(app, ["status", "--dsn", DSN])
+    assert result.exit_code == 0, result.output
+    for section in ("SOURCES", "RECORD INTEGRITY", "QUALITY", "STATIONS BY STATUS"):
+        assert section in result.output
+    assert "fhmz" in result.output
+
+
+@requires_db
+def test_status_on_an_empty_database_says_so(tmp_path: Path) -> None:
+    """Must not divide by zero or print a misleading percentage."""
+    import psycopg
+
+    with psycopg.connect(DSN) as conn:
+        conn.execute("select 1")
+    result = runner.invoke(app, ["status", "--dsn", DSN])
+    assert result.exit_code == 0

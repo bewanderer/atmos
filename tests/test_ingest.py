@@ -346,3 +346,198 @@ def test_station_declaring_a_parameter_it_never_sends_is_never_reported(scene) -
     )
     row = cur.fetchone()
     assert row and row[0] == "never_reported"
+
+
+def test_a_conflicting_insert_costs_one_row_not_the_run(scene) -> None:
+    """Two ingests can race. Losing the whole run over one row is unacceptable
+    on an eighty thousand row backfill."""
+    cur, stations, params, fetch_id, station_id = scene
+
+    # Simulate the race: another writer got there between our read and write.
+    ing.ingest_observations(cur, stations, params, fetch_id, "t", [reading("10.0")])
+
+    # A second attempt at the identical reading must confirm, never raise.
+    r = ing.ingest_observations(cur, stations, params, fetch_id, "t", [reading("10.0")])
+    assert r.confirmed == 1
+    assert r.inserted == 0
+
+    # And the run continues: later readings in the same batch still land.
+    later = ParsedObservation(
+        source_station_id="t_stn", parameter_code="pm10",
+        phenomenon_start=START + dt.timedelta(hours=2),
+        phenomenon_end=END + dt.timedelta(hours=2),
+        value=Decimal("11.0"), unit="ug/m3", raw_value="11.0", raw_unit="ug/m3")
+    r2 = ing.ingest_observations(cur, stations, params, fetch_id, "t",
+                                 [reading("10.0"), later])
+    assert r2.inserted == 1
+    assert r2.confirmed == 1
+
+
+def test_concurrent_writers_leave_exactly_one_row(scene) -> None:
+    """Integrity under concurrency is the database's job, not the code's.
+
+    This test has to commit, and observations cannot be deleted, so it uses its
+    own station and a timestamp unique to the run. Otherwise its rows would
+    outlive it and collide with every other test.
+    """
+    import threading
+    import uuid
+
+    cur, _stations, params, fetch_id, _station_id = scene
+    cur.execute("select source_id from stations where id=%s", (_station_id,))
+    source_id = cur.fetchone()[0]
+
+    tag = uuid.uuid4().hex[:8]
+    own_id = ing.upsert_station(
+        cur, source_id,
+        ParsedStation(source_station_id=f"race_{tag}", name="Race Station",
+                      declared_parameters=("pm10",)),
+    )
+    # Far from any other test's window, and unique per run.
+    when = dt.datetime(2019, 1, 1, tzinfo=dt.UTC) + dt.timedelta(
+        seconds=int(uuid.uuid4().int % 1_000_000)
+    )
+    cur.connection.commit()
+
+    def one() -> ParsedObservation:
+        return ParsedObservation(
+            source_station_id=f"race_{tag}", parameter_code="pm10",
+            phenomenon_start=when, phenomenon_end=when + dt.timedelta(hours=1),
+            value=Decimal("77.0"), unit="ug/m3", raw_value="77.0", raw_unit="ug/m3")
+
+    errors: list[str] = []
+
+    def worker() -> None:
+        try:
+            with psycopg.connect(DSN) as conn:
+                c = conn.cursor()
+                ing.ingest_observations(c, {f"race_{tag}": own_id},
+                                        ing.parameter_ids(c), fetch_id, "t", [one()])
+                conn.commit()
+        except Exception as e:  # noqa: BLE001
+            errors.append(f"{type(e).__name__}: {e}")
+
+    threads = [threading.Thread(target=worker) for _ in range(4)]
+    for t in threads:
+        t.start()
+    for t in threads:
+        t.join()
+
+    assert errors == [], f"a writer lost its run: {errors}"
+    cur.connection.commit()
+    cur.execute(
+        """select count(*) from observations
+             where station_id=%s and phenomenon_start=%s""",
+        (own_id, when),
+    )
+    assert cur.fetchone()[0] == 1
+
+
+def test_confirmations_are_batched_not_one_per_row(scene) -> None:
+    """Re-observing is the common case. One round trip per row made re-ingest
+    seven times slower than a fresh load."""
+    cur, stations, params, fetch_id, station_id = scene
+
+    batch = []
+    for i in range(50):
+        s = START + dt.timedelta(minutes=i)
+        batch.append(ParsedObservation(
+            source_station_id="t_stn", parameter_code="pm10",
+            phenomenon_start=s, phenomenon_end=s,
+            value=Decimal("5.0"), unit="ug/m3", raw_value="5.0", raw_unit="ug/m3"))
+
+    first = ing.ingest_observations(cur, stations, params, fetch_id, "t", batch)
+    assert first.inserted == 50
+
+    second = ing.ingest_observations(cur, stations, params, fetch_id, "t", batch)
+    assert second.confirmed == 50
+    assert second.inserted == 0
+
+    cur.execute(
+        """select min(confirmations), max(confirmations) from observations
+             where station_id=%s and parameter_id=%s""",
+        (station_id, params["pm10"]),
+    )
+    lo, hi = cur.fetchone()
+    assert lo == hi == 2, "every row must be confirmed exactly once"
+
+
+def test_batched_confirm_still_cannot_alter_a_value(scene) -> None:
+    """The batch path has the same guarantee as the single row one."""
+    cur, stations, params, fetch_id, station_id = scene
+    ing.ingest_observations(cur, stations, params, fetch_id, "t", [reading("10.0")])
+    ing.ingest_observations(cur, stations, params, fetch_id, "t", [reading("10.0")])
+
+    rows = history(cur, station_id, params["pm10"])
+    assert len(rows) == 1
+    assert rows[0][1] == Decimal("10.0"), "the value must be untouched"
+    assert rows[0][4] == 2, "only the counter moved"
+
+
+def test_a_stuck_sensor_is_flagged(scene) -> None:
+    """A repeated value is a stuck instrument, not twenty measurements."""
+    cur, stations, params, fetch_id, station_id = scene
+
+    def at(hour: int, value: str) -> ParsedObservation:
+        s = START + dt.timedelta(hours=hour)
+        return ParsedObservation(
+            source_station_id="t_stn", parameter_code="pm10",
+            phenomenon_start=s, phenomenon_end=s + dt.timedelta(hours=1),
+            value=Decimal(value), unit="ug/m3", raw_value=value, raw_unit="ug/m3")
+
+    stuck = [at(i, "12.5") for i in range(20)]
+    varying = [at(30 + i, str(10 + i)) for i in range(20)]
+    ing.ingest_observations(cur, stations, params, fetch_id, "t", stuck + varying)
+
+    cur.execute("select apply_sequence_flags(%s)", (START - dt.timedelta(days=1),))
+    assert cur.fetchone()[0] >= 20
+
+    cur.execute(
+        """select count(*) from observation_flags
+             where station_id=%s and flag='flatline'""", (station_id,))
+    assert cur.fetchone()[0] == 20
+
+    # The varying readings must be untouched.
+    cur.execute(
+        """select count(*) from observation_flags f
+             join observations o
+               on o.station_id=f.station_id and o.phenomenon_start=f.phenomenon_start
+            where f.station_id=%s and o.value > 20""", (station_id,))
+    assert cur.fetchone()[0] == 0
+
+
+def test_a_run_of_zeros_is_flagged_separately(scene) -> None:
+    """One zero is often a real below-limit reading. Twenty is a dead sensor."""
+    cur, stations, params, fetch_id, station_id = scene
+    batch = []
+    for i in range(20):
+        s = START + dt.timedelta(hours=i)
+        batch.append(ParsedObservation(
+            source_station_id="t_stn", parameter_code="pm10",
+            phenomenon_start=s, phenomenon_end=s + dt.timedelta(hours=1),
+            value=Decimal("0"), unit="ug/m3", raw_value="0", raw_unit="ug/m3"))
+    ing.ingest_observations(cur, stations, params, fetch_id, "t", batch)
+    cur.execute("select apply_sequence_flags(%s)", (START - dt.timedelta(days=1),))
+
+    cur.execute(
+        """select flag, count(*) from observation_flags
+            where station_id=%s group by flag""", (station_id,))
+    flags = dict(cur.fetchall())
+    assert flags.get("zero_run") == 20
+    assert "flatline" not in flags, "zeros are their own case"
+
+
+def test_a_short_run_is_not_flagged(scene) -> None:
+    """Below the threshold is ordinary steady air, not a fault."""
+    cur, stations, params, fetch_id, station_id = scene
+    batch = []
+    for i in range(5):
+        s = START + dt.timedelta(hours=i)
+        batch.append(ParsedObservation(
+            source_station_id="t_stn", parameter_code="pm10",
+            phenomenon_start=s, phenomenon_end=s + dt.timedelta(hours=1),
+            value=Decimal("9.9"), unit="ug/m3", raw_value="9.9", raw_unit="ug/m3"))
+    ing.ingest_observations(cur, stations, params, fetch_id, "t", batch)
+    cur.execute("select apply_sequence_flags(%s)", (START - dt.timedelta(days=1),))
+    cur.execute("select count(*) from observation_flags where station_id=%s", (station_id,))
+    assert cur.fetchone()[0] == 0
