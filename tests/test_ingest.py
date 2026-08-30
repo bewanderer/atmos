@@ -15,11 +15,11 @@ import pytest
 
 from atmos.connectors.base import ParsedObservation, ParsedStation
 from atmos.core import ingest as ing
-from tests.conftest import DSN, SKIP_REASON
+from tests.conftest import DSN, NOTE
 
 psycopg = pytest.importorskip("psycopg")
 
-pytestmark = pytest.mark.skipif(DSN is None, reason=SKIP_REASON)
+pytestmark = pytest.mark.skipif(DSN is None, reason=NOTE)
 
 START = dt.datetime(2026, 1, 15, 10, tzinfo=dt.UTC)
 END = START + dt.timedelta(hours=1)
