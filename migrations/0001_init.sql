@@ -222,23 +222,31 @@ comment on table observations is
   'Only confirm_observation() may touch the confirmation counters.';
 
 
--- Partitions. A maintenance job creates these ahead of time.
--- Backfill reaches 2013, so early partitions exist from the start.
+-- Monthly partitions. A maintenance job creates these ahead of time.
+-- Sensor.Community reaches 2015, so early months exist from the start.
+--
+-- Monthly rather than yearly because Sensor.Community reports every 2.5 minutes:
+-- a year holds roughly 10 million rows, a month roughly 830 thousand. Partition
+-- size is invisible to queries, which span as many months as they like.
 do $$
 declare
   y int;
+  m int;
+  name text;
+  lo timestamptz;
 begin
-  for y in 2013..2028 loop
-    execute format(
-      'create table observations_%s partition of observations
-         for values from (%L) to (%L)',
-      y,
-      make_timestamptz(y, 1, 1, 0, 0, 0, 'UTC'),
-      make_timestamptz(y + 1, 1, 1, 0, 0, 0, 'UTC')
-    );
-    -- Ownership does not cascade from the parent, so set it per partition.
-    -- The maintenance job that adds future partitions must do the same.
-    execute format('alter table observations_%s owner to atmos_owner', y);
+  for y in 2015..2027 loop
+    for m in 1..12 loop
+      name := format('observations_%s_%s', y, lpad(m::text, 2, '0'));
+      lo := make_timestamptz(y, m, 1, 0, 0, 0, 'UTC');
+      execute format(
+        'create table %I partition of observations for values from (%L) to (%L)',
+        name, lo, lo + interval '1 month'
+      );
+      -- Ownership does not cascade from the parent, so set it per partition.
+      -- The maintenance job that adds future months must do the same.
+      execute format('alter table %I owner to atmos_owner', name);
+    end loop;
   end loop;
 end
 $$;

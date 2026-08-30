@@ -17,6 +17,14 @@ from atmos.core.fetch import Fetcher
 
 app = typer.Typer(add_completion=False, help="Atmos collector")
 
+def _count(cur: object) -> int:
+    """A count from the next row. Guards the None that mypy keeps catching."""
+    row = cur.fetchone()  # type: ignore[attr-defined]
+    if row is None:
+        raise RuntimeError("expected a row, got none")
+    return int(row[0])
+
+
 CONNECTORS: dict[str, Connector] = {
     "fhmz": FhmzConnector(),
     "tuzla": TuzlaConnector(),
@@ -332,6 +340,102 @@ def backfill(
     typer.echo(
         f"fetched {fetched}, already held {skipped}, absent {missing} -> {dest}"
     )
+
+
+@app.command()
+def status(
+    dsn: str = typer.Option(None, "--dsn", envvar="ATMOS_DATABASE_URL"),
+) -> None:
+    """What we hold, and how much of it is trustworthy."""
+    import psycopg
+
+    if not dsn:
+        typer.echo("no database DSN, set ATMOS_DATABASE_URL", err=True)
+        raise typer.Exit(2)
+
+    with psycopg.connect(dsn) as db, db.cursor() as cur:
+        cur.execute("select count(*) from observations")
+        total = _count(cur)
+        if not total:
+            typer.echo("no observations held")
+            return
+
+        typer.echo("SOURCES")
+        cur.execute("""
+            select s.slug, s.tier, count(distinct st.id) as stations,
+                   count(o.*) as observations,
+                   min(o.phenomenon_start)::date, max(o.phenomenon_start)::date
+              from sources s
+              left join stations st on st.source_id = s.id
+              left join observations o on o.station_id = st.id
+             group by s.slug, s.tier order by count(o.*) desc
+        """)
+        for slug, tier, stations, obs, lo, hi in cur.fetchall():
+            span = f"{lo} to {hi}" if lo else "no data"
+            typer.echo(f"  {slug:16s} {tier:12s} {stations:4d} stations "
+                       f"{obs:>9,} obs   {span}")
+
+        typer.echo("")
+        typer.echo("RECORD INTEGRITY")
+        cur.execute("""
+            select count(*) filter (where revision = 1) as originals,
+                   count(*) filter (where revision > 1) as revisions,
+                   count(*) filter (where revision_kind = 'withdrawal') as withdrawals,
+                   count(*) filter (where is_backfill) as backfilled
+              from observations
+        """)
+        row = cur.fetchone()
+        assert row is not None
+        originals, revisions, withdrawals, backfilled = row
+        typer.echo(f"  originals   {originals:>9,}")
+        typer.echo(f"  revisions   {revisions:>9,}   (a source changed a published value)")
+        typer.echo(f"  withdrawals {withdrawals:>9,}   (a source removed one)")
+        typer.echo(f"  backfilled  {backfilled:>9,}   (history, not watched live)")
+
+        typer.echo("")
+        typer.echo("QUALITY")
+        cur.execute("select count(*) from consensus_eligible")
+        eligible = _count(cur)
+        cur.execute("""
+            select f.flag, count(*) from observation_flags f
+             group by f.flag order by count(*) desc
+        """)
+        flags = cur.fetchall()
+        share = 100.0 * eligible / originals if originals else 0
+        typer.echo(f"  eligible for consensus {eligible:>9,}  ({share:.1f}% of originals)")
+        for flag, n in flags:
+            typer.echo(f"  flagged {flag:22s} {n:>9,}")
+        if not flags:
+            typer.echo("  no flags raised")
+
+        typer.echo("")
+        typer.echo("STATIONS BY STATUS")
+        cur.execute("""
+            select status, count(*) from station_status
+             group by status order by count(*) desc
+        """)
+        for st, n in cur.fetchall():
+            typer.echo(f"  {st:16s} {n:4d} station/parameter pairs")
+
+        typer.echo("")
+        typer.echo("GAPS, worst first")
+        cur.execute("""
+            select s.slug, stn.name, p.code, ss.status,
+                   ss.last_observation_at::date
+              from station_status ss
+              join stations stn on stn.id = ss.station_id
+              join sources s on s.id = stn.source_id
+              join parameters p on p.id = ss.parameter_id
+             where ss.status in ('never_reported','dormant','stale')
+             order by ss.last_observation_at nulls first
+             limit 10
+        """)
+        rows = cur.fetchall()
+        for slug, name, code, st, last in rows:
+            typer.echo(f"  {slug:14s} {name[:22]:22s} {code:5s} {st:15s} "
+                       f"{last or 'never'}")
+        if not rows:
+            typer.echo("  none")
 
 
 if __name__ == "__main__":
