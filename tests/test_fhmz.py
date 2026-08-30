@@ -12,7 +12,15 @@ from pathlib import Path
 import pytest
 
 from atmos.connectors.base import FetchTarget
-from atmos.connectors.fhmz import STATIONS, FhmzConnector, discover_stations
+from atmos.connectors.fhmz import (
+    FHMZ,
+    MIKK,
+    REGISTRY,
+    STATIONS,
+    ZZJZKS,
+    FhmzConnector,
+    discover_stations,
+)
 
 FIXTURES = Path(__file__).parent / "fixtures" / "fhmz"
 
@@ -108,10 +116,51 @@ def test_missing_cells_produce_no_observation(conn: FhmzConnector) -> None:
 def test_station_metadata(conn: FhmzConnector) -> None:
     stations = conn.stations(load("amsVijecnica"), target("amsVijecnica"))
     assert len(stations) == 1
-    assert stations[0].source_station_id == "amsVijecnica"
-    assert stations[0].name == "Sarajevo Vijecnica"
-    # The pages publish no coordinates. Better null than invented.
-    assert stations[0].latitude is None
+    st = stations[0]
+    assert st.source_station_id == "amsVijecnica"
+    assert st.name == "Sarajevo Vijecnica"
+    # Coordinates come from the annual report, not the page.
+    assert (st.latitude, st.longitude) == (43.859, 18.434)
+    assert st.elevation_m == 554
+    assert st.station_type == "traffic"
+    assert st.area_type == "urban"
+    # Published by FHMZ, run by the Sarajevo public health institute.
+    assert st.operator == ZZJZKS
+
+
+def test_station_without_a_registry_entry_gets_no_coordinates(
+    conn: FhmzConnector,
+) -> None:
+    """A guessed position would silently break every comparison by distance."""
+    assert "amsSPolje" not in REGISTRY
+    st = conn.stations(load("amsSPolje"), target("amsSPolje"))[0]
+    assert st.name == "Sarajevo Polje"
+    assert st.latitude is None
+    assert st.longitude is None
+    assert st.elevation_m is None
+    assert st.operator is None
+    # Still useful: we know what it claims to publish.
+    assert st.declared_parameters
+
+
+def test_registry_positions_are_inside_bosnia() -> None:
+    """A transposed lat/lon or a stray digit puts a station in another country."""
+    for page, (code, lat, lon, elevation, _type, _area, operator) in REGISTRY.items():
+        assert page in STATIONS, page
+        assert code.startswith("BA"), page
+        assert 42.5 < lat < 45.4, page
+        assert 15.6 < lon < 19.7, page
+        assert 0 < elevation < 2400, page
+        assert operator, page
+
+
+def test_registry_codes_and_positions_are_not_reused() -> None:
+    """Two stations sharing a code or a position would collapse into one."""
+    codes = [v[0] for v in REGISTRY.values()]
+    assert len(set(codes)) == len(codes)
+    # Kakanj Centar and Kakanj Opcina sit close but are distinct instruments.
+    positions = [(v[1], v[2]) for v in REGISTRY.values()]
+    assert len(set(positions)) == len(positions)
 
 
 def test_source_metadata_declares_licensing_fields(conn: FhmzConnector) -> None:
@@ -173,3 +222,42 @@ def test_inferred_dates_match_a_sibling_table(conn: FhmzConnector) -> None:
     nox_days = {o.phenomenon_start.date() for o in obs if o.parameter_code == "nox"}
     o3_days = {o.phenomenon_start.date() for o in obs if o.parameter_code == "o3"}
     assert nox_days == o3_days
+
+
+def test_h2s_is_parsed_where_the_station_measures_it(conn: FhmzConnector) -> None:
+    """H2S sits in a normal data table. Dropping it lost readings silently."""
+    obs = conn.parse(load("amsIlidza"), target("amsIlidza"))
+    h2s = [o for o in obs if o.parameter_code == "h2s"]
+    assert h2s
+    assert all(o.unit == "ug/m3" for o in h2s)
+    assert all(o.value is not None and o.value >= 0 for o in h2s)
+    # Declared too, so a station whose analyser goes quiet is still known.
+    st = conn.stations(load("amsIlidza"), target("amsIlidza"))[0]
+    assert "h2s" in st.declared_parameters
+
+
+def test_stations_without_h2s_report_none(conn: FhmzConnector) -> None:
+    """Only three stations measure it. The rest must not gain an empty series."""
+    obs = conn.parse(load("amsVijecnica"), target("amsVijecnica"))
+    assert not [o for o in obs if o.parameter_code == "h2s"]
+    st = conn.stations(load("amsVijecnica"), target("amsVijecnica"))[0]
+    assert "h2s" not in st.declared_parameters
+
+
+def test_operators_match_the_report_not_the_network() -> None:
+    """These four sit in one network but are run by another body.
+
+    Read from table 2 of the annual report. A summary of that table put all of
+    them with their network and got every one of these wrong.
+    """
+    assert REGISTRY["amsBjelave"][6] == FHMZ
+    assert REGISTRY["amsTrnovac"][6] == FHMZ
+    assert REGISTRY["amsMaglaj"][6] == MIKK
+    assert REGISTRY["amsTesanj"][6] == MIKK
+
+
+def test_industrial_stations_have_no_invented_area_type() -> None:
+    """The report classifies these as industrial and says nothing about area."""
+    for page in ("amsTetovo", "amsBukinje"):
+        assert REGISTRY[page][4] == "industrial"
+        assert REGISTRY[page][5] == "unknown"

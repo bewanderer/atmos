@@ -8,7 +8,6 @@ nothing is the worst outcome available.
 from __future__ import annotations
 
 import json
-import os
 import shutil
 from datetime import UTC, datetime
 from pathlib import Path
@@ -100,9 +99,11 @@ def test_ingest_without_a_manifest_exits(tmp_path: Path) -> None:
 
 
 def test_ingest_without_a_dsn_exits(archived_run: Path) -> None:
-    env = {k: v for k, v in os.environ.items() if k != "ATMOS_DATABASE_URL"}
+    # A None value removes the variable. A filtered copy of os.environ does not:
+    # env is applied over the real environment, so absent keys stay as they are.
     result = runner.invoke(app, ["ingest", "--connector", "fhmz",
-                                 "--path", str(archived_run)], env=env)
+                                 "--path", str(archived_run)],
+                           env={"ATMOS_DATABASE_URL": None})
     assert result.exit_code == 2
 
 
@@ -202,8 +203,7 @@ def test_backfill_rejects_a_connector_without_an_archive(tmp_path: Path) -> None
 
 
 def test_status_without_a_dsn_exits() -> None:
-    env = {k: v for k, v in os.environ.items() if k != "ATMOS_DATABASE_URL"}
-    result = runner.invoke(app, ["status"], env=env)
+    result = runner.invoke(app, ["status"], env={"ATMOS_DATABASE_URL": None})
     assert result.exit_code == 2
 
 

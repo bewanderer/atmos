@@ -79,6 +79,73 @@ STATIONS: dict[str, str] = {
     "amsLukavac": "Lukavac Centar",
 }
 
+# Operating bodies, named in the FHMZ annual report.
+FHMZ = "Federalni hidrometeoroloski zavod"
+ZZJZKS = "Zavod za javno zdravstvo Kantona Sarajevo"
+MIKK = "Metalurski institut Kemal Kapetanovic Zenica"
+TK = "Tuzlanski kanton, Ministarstvo prostornog uredenja i zastite okolice"
+VARES = "Opcina Vares"
+KAKANJ = "Opcina Kakanj"
+
+# Station metadata from the FHMZ annual reports, which publish what the station
+# pages do not: coordinates, elevation, site classification and the operating
+# body. Extracted from the 2024 report, pages 7 and 8.
+#
+# Site classification matters beyond the map. An industrial station reading
+# higher than an urban background one two kilometres away is expected, and
+# without knowing that we would report it as a divergence.
+#
+# Operator is separate from publisher on purpose. FHMZ publishes 33 stations and
+# runs a minority of them; two stations sharing an operator are less independent
+# than two that do not, however separately they are published.
+#
+# Operator is read per station from table 2 of the report, not inferred from the
+# network a station sits in. Four of these differ from what the grouping suggests:
+# Bjelave and Tuzla Trnovac are FHMZ, Maglaj and Tesanj are the Zenica institute.
+#
+# Site type is translated from the report's own wording. Urbano pozadinska is
+# background/urban, Urbana/saobracajna is traffic/urban, Ruralno pozadinska is
+# background/rural. Industrijska names no area, so area stays unknown.
+#
+# page -> (EEA code, lat, lon, elevation m, station_type, area_type, operator)
+REGISTRY: dict[str, tuple[str, float, float, int, str, str, str | None]] = {
+    "amsISedlo":    ("BA0001G", 43.778, 18.020, 969, "background", "rural", FHMZ),
+    "amsBjelave":   ("BA0029A", 43.867, 18.423, 635, "background", "urban", FHMZ),
+    "amsSkver":     ("BA0031A", 44.540, 18.673, 234, "traffic",    "urban", TK),
+    "amsBKC":       ("BA0032A", 44.534, 18.661, 231, "unknown",    "urban", TK),
+    "amsBrist":     ("BA0036A", 44.202, 17.900, 341, "background", "urban", FHMZ),
+    "amsCentarZE":  ("BA0037A", 44.198, 17.912, 335, "unknown",    "urban", MIKK),
+    "amsTetovo":    ("BA0038A", 44.225, 17.890, 337, "industrial", "unknown", MIKK),
+    "amsRadakovo":  ("BA0039A", 44.195, 17.931, 340, "traffic",    "urban", MIKK),
+    "amsJajce":     ("BA0040A", 44.343, 17.267, 401, "background", "urban", FHMZ),
+    "amsGorazde":   ("BA0041A", 43.661, 18.977, 361, "background", "urban", FHMZ),
+    "amsOtoka":     ("BA0042A", 43.848, 18.363, 512, "traffic",    "urban", ZZJZKS),
+    "amsIlidza":    ("BA0043A", 43.830, 18.310, 509, "unknown",    "urban", ZZJZKS),
+    "amsBukinje":   ("BA0044A", 44.523, 18.600, 214, "industrial", "unknown", TK),
+    "amsLukavac":   ("BA0045A", 44.533, 18.534, 187, "unknown",    "urban", TK),
+    "amsZivinice":  ("BA0046A", 44.454, 18.648, 214, "unknown",    "urban", TK),
+    "amsVijecnica": ("BA0049A", 43.859, 18.434, 554, "traffic",    "urban", ZZJZKS),
+    "amsIlijas":    ("BA0050A", 43.960, 18.269, 459, "background", "urban", ZZJZKS),
+    "amsVranduk":   ("BA0051A", 44.289, 17.907, 359, "background", "rural", MIKK),
+    "amsMaglaj":    ("BA0054A", 44.544, 18.098, 175, "unknown",    "urban", MIKK),
+    "amsVisoko":    ("BA0055A", 43.994, 18.175, 425, "unknown",    "urban", MIKK),
+    "amsTesanj":    ("BA0056A", 44.619, 17.991, 240, "background", "urban", MIKK),
+    "amsLivno":     ("BA0057A", 43.822, 17.001, 806, "background", "urban", FHMZ),
+    "amsBihac":     ("BA0058A", 44.807, 15.866, 244, "background", "urban", FHMZ),
+    "amsHadzici":   ("BA0060A", 43.823, 18.201, 557, "unknown",    "urban", ZZJZKS),
+    "amsVogosca":   ("BA0061A", 43.900, 18.342, 496, "unknown",    "urban", ZZJZKS),
+    "amsTravnik":   ("BA0062A", 44.225, 17.667, 507, "unknown",    "urban", FHMZ),
+    "amsKakanj":    ("BA0066A", 44.124, 18.115, 388, "unknown",    "urban", MIKK),
+    "amsMostar":    ("BA0067A", 43.348, 17.794,  97, "background", "urban", FHMZ),
+    "amsTrnovac":   ("BA0068A", 44.542, 18.689, 299, "background", "urban", FHMZ),
+    "amsVares":     ("BA0069A", 44.157, 18.325, 821, "unknown",    "urban", VARES),
+    "amsKakanjOpcina": ("BA0070A", 44.123, 18.115, 388, "unknown", "urban", KAKANJ),
+}
+
+# Two pages have no registry entry: amsSPolje and amsMostarHNK. They are left
+# without coordinates rather than given a guess, which would put a station in
+# the wrong place and quietly corrupt any comparison by distance.
+
 # Their label -> our code. Unlisted labels are ignored, not guessed at.
 PARAMETERS: dict[str, str] = {
     "SO2": "so2",
@@ -87,6 +154,7 @@ PARAMETERS: dict[str, str] = {
     "NO": "no",
     "CO": "co",
     "O3": "o3",
+    "H2S": "h2s",
     "PM10": "pm10",
     "PM2.5": "pm25",
     "PM2,5": "pm25",
@@ -152,7 +220,6 @@ class FhmzConnector:
         )
 
     def stations(self, raw: bytes, target: FetchTarget) -> list[ParsedStation]:
-        # No coordinates on these pages. They are in the annual reports.
         name = STATIONS.get(target.id)
         if not name:
             return []
@@ -164,10 +231,23 @@ class FhmzConnector:
             html = raw.decode("windows-1250", errors="replace")
         declared = tuple(dict.fromkeys(code for code, _ in self._pollutant_tables(html)))
 
+        # The pages carry no coordinates. These come from the annual reports.
+        entry = REGISTRY.get(target.id)
+        if entry is None:
+            return [ParsedStation(source_station_id=target.id, name=name,
+                                  declared_parameters=declared)]
+
+        _code, lat, lon, elevation, station_type, area_type, operator = entry
         return [
             ParsedStation(
                 source_station_id=target.id,
                 name=name,
+                latitude=lat,
+                longitude=lon,
+                elevation_m=float(elevation),
+                station_type=station_type,
+                area_type=area_type,
+                operator=operator,
                 declared_parameters=declared,
             )
         ]

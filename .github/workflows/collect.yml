@@ -82,10 +82,13 @@ jobs:
         run: |
           TAG="archive-${{ steps.collect.outputs.month }}"
           if ! gh release view "$TAG" >/dev/null 2>&1; then
+            # On the first run of a month several connectors race to create
+            # this. Losing the race is fine, as long as the release exists after.
             gh release create "$TAG" \
               --title "Raw archive ${{ steps.collect.outputs.month }}" \
               --notes "Raw source responses as fetched, with a manifest recording URL, timestamp, HTTP status and SHA-256 per fetch. Unmodified." \
-              --latest=false
+              --latest=false \
+            || gh release view "$TAG" >/dev/null
           fi
           gh release upload "$TAG" ./*.tar.gz --clobber
 

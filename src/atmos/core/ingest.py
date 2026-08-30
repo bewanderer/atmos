@@ -87,17 +87,20 @@ def upsert_station(cur: psycopg.Cursor, source_id: int, st: ParsedStation) -> in
         """
         insert into stations
           (source_id, source_station_id, name, geom, elevation_m,
-           station_type, area_type, is_indoor, is_mobile, last_seen_at)
-        values (%s,%s,%s,%s,%s,%s,%s,%s,%s, now())
+           station_type, area_type, is_indoor, is_mobile, operator, last_seen_at)
+        values (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s, now())
         on conflict (source_id, source_station_id) do update set
           name = excluded.name,
           geom = coalesce(excluded.geom, stations.geom),
           elevation_m = coalesce(excluded.elevation_m, stations.elevation_m),
+          station_type = excluded.station_type,
+          area_type = excluded.area_type,
+          operator = coalesce(excluded.operator, stations.operator),
           last_seen_at = now()
         returning id
         """,
         (source_id, st.source_station_id, st.name, geom, st.elevation_m,
-         st.station_type, st.area_type, st.is_indoor, st.is_mobile),
+         st.station_type, st.area_type, st.is_indoor, st.is_mobile, st.operator),
     )
     row = cur.fetchone()
     assert row is not None
@@ -151,8 +154,14 @@ def ingest_observations(
     observations: list[ParsedObservation],
     seen_at: datetime | None = None,
     is_backfill: bool = False,
+    count_confirmations: bool = True,
 ) -> IngestResult:
     """Apply a batch of parsed readings.
+
+    Set count_confirmations False when re-reading bytes already ingested, after
+    a parser fix. Readings the parser used to miss still get inserted, but a
+    value we already hold is left alone: reading the same page twice is not the
+    source publishing it twice.
 
     Batched deliberately. A row at a time meant one round trip to read the
     current state and more to write, and wrapping each write in a savepoint
@@ -206,8 +215,9 @@ def ingest_observations(
 
         if kind != "withdrawal" and value == stored_value and unit == stored_unit:
             # Unchanged since we last looked. Count it, store nothing.
-            to_confirm.append((*key, revision))
-            result.confirmed += 1
+            if count_confirmations:
+                to_confirm.append((*key, revision))
+                result.confirmed += 1
             continue
 
         # Something changed. Append, never replace. A value returning after a

@@ -124,11 +124,19 @@ def ingest(
     connector: str = typer.Option(..., "--connector", "-c"),
     path: pathlib.Path = typer.Option(..., "--path", "-p", help="An archived run directory"),
     dsn: str = typer.Option(None, "--dsn", envvar="ATMOS_DATABASE_URL"),
+    reprocess: bool = typer.Option(
+        False, "--reprocess",
+        help="Re-read bytes already ingested, without counting confirmations",
+    ),
 ) -> None:
     """Load an archived run into Postgres.
 
     Safe to re-run. A reading already held is confirmed, not duplicated, and a
     changed one is appended as a new revision. Nothing is ever overwritten.
+
+    Use --reprocess after fixing a parser. Readings it used to miss are picked
+    up, but values we already hold are left untouched, because re-reading the
+    same page is not the source publishing it again.
     """
     import psycopg
 
@@ -204,15 +212,21 @@ def ingest(
 
                 r = ing.ingest_observations(cur, stations, params, fetch_id,
                                             conn_impl.parser_version, observations,
-                                            is_backfill=is_backfill)
+                                            is_backfill=is_backfill,
+                                            count_confirmations=not reprocess)
                 totals.inserted += r.inserted
                 totals.confirmed += r.confirmed
                 totals.revisions += r.revisions
 
                 # Only meaningful when the fetch reprinted a whole window. On a
                 # snapshot feed a reading being absent says nothing at all.
+                #
+                # Skipped when reprocessing. An older page cannot show readings
+                # published after it, and calling those withdrawn would be a
+                # withdrawal we invented.
                 withdrawn = 0
-                if meta.republishes_window and observations and not is_backfill:
+                if (meta.republishes_window and observations
+                        and not is_backfill and not reprocess):
                     withdrawn = ing.withdraw_absent(
                         cur, stations, params, fetch_id,
                         conn_impl.parser_version, observations)

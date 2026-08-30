@@ -53,6 +53,9 @@ class ParsedStation:
     area_type: str = "unknown"
     is_indoor: bool = False
     is_mobile: bool = False
+    # The body running the instrument, where the source says. Often not the
+    # publisher: FHMZ carries stations run by municipalities and institutes.
+    operator: str | None = None
     # False when the source rounds coordinates for privacy, which matters when
     # matching stations to each other by distance.
     location_precise: bool = True

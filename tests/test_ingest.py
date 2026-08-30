@@ -541,3 +541,56 @@ def test_a_short_run_is_not_flagged(scene) -> None:
     cur.execute("select apply_sequence_flags(%s)", (START - dt.timedelta(days=1),))
     cur.execute("select count(*) from observation_flags where station_id=%s", (station_id,))
     assert cur.fetchone()[0] == 0
+
+
+def test_reprocess_recovers_missed_readings_without_counting_confirmations(
+    scene,
+) -> None:
+    """What a parser fix looks like: the old bytes, read better.
+
+    The reading the parser used to miss lands. The one already held keeps its
+    confirmation count, because reading the same page twice is not the source
+    publishing it twice.
+    """
+    cur, stations, params, fetch_id, station_id = scene
+    later = START + dt.timedelta(hours=1)
+
+    def at(start, value):
+        return ParsedObservation(
+            source_station_id="t_stn", parameter_code="pm10",
+            phenomenon_start=start, phenomenon_end=start,
+            value=Decimal(value), unit="ug/m3", raw_value=value, raw_unit="ug/m3")
+
+    # First pass, before the fix: one of the two readings was not parsed.
+    ing.ingest_observations(cur, stations, params, fetch_id, "t", [at(START, "10.0")])
+
+    # Same bytes, fixed parser.
+    r = ing.ingest_observations(cur, stations, params, fetch_id, "t",
+                                [at(START, "10.0"), at(later, "11.0")],
+                                count_confirmations=False)
+    assert r.inserted == 1
+    assert r.confirmed == 0
+    assert r.revisions == 0
+
+    cur.execute(
+        """select phenomenon_start, value, revision, confirmations
+             from observations where station_id=%s and parameter_id=%s
+            order by phenomenon_start""",
+        (station_id, params["pm10"]),
+    )
+    rows = cur.fetchall()
+    assert [r[1] for r in rows] == [Decimal("10.0"), Decimal("11.0")]
+    assert all(r[2] == 1 for r in rows), "no revision should have been appended"
+    assert rows[0][3] == 1, "already held, so its count must not move"
+
+
+def test_reprocess_still_records_a_genuine_value_change(scene) -> None:
+    """Not counting confirmations must not mean ignoring changed values."""
+    cur, stations, params, fetch_id, station_id = scene
+    ing.ingest_observations(cur, stations, params, fetch_id, "t", [reading("10.0")])
+    r = ing.ingest_observations(cur, stations, params, fetch_id, "t",
+                                [reading("12.0")], count_confirmations=False)
+    assert r.revisions == 1
+    rows = history(cur, station_id, params["pm10"])
+    assert [x[1] for x in rows] == [Decimal("10.0"), Decimal("12.0")]
+    assert rows[1][3] == "value_change"
