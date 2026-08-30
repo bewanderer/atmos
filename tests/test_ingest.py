@@ -594,3 +594,92 @@ def test_reprocess_still_records_a_genuine_value_change(scene) -> None:
     rows = history(cur, station_id, params["pm10"])
     assert [x[1] for x in rows] == [Decimal("10.0"), Decimal("12.0")]
     assert rows[1][3] == "value_change"
+
+
+def test_rounded_coordinates_are_recorded_as_imprecise(scene) -> None:
+    """Sensor.Community rounds positions for privacy. Distance matching has to
+    know, or it treats a kilometre of slack as a surveyed location."""
+    cur, stations, params, fetch_id, station_id = scene
+    cur.execute("select source_id from stations where id=%s", (station_id,))
+    source_id = cur.fetchone()[0]
+
+    rough = ing.upsert_station(
+        cur, source_id,
+        ParsedStation(source_station_id="t_rough", name="Rounded",
+                      latitude=43.8, longitude=18.4, location_precise=False),
+    )
+    cur.execute("select location_precise from stations where id=%s", (rough,))
+    assert cur.fetchone()[0] is False
+
+    # And the default stays true for a surveyed site.
+    cur.execute("select location_precise from stations where id=%s", (station_id,))
+    assert cur.fetchone()[0] is True
+
+
+def _dup(value: str, start=None) -> ParsedObservation:
+    s = start or START
+    return ParsedObservation(
+        source_station_id="t_stn", parameter_code="pm10",
+        phenomenon_start=s, phenomenon_end=s,
+        value=Decimal(value), unit="ug/m3", raw_value=value, raw_unit="ug/m3")
+
+
+def test_a_payload_disagreeing_with_itself_is_not_a_revision(scene) -> None:
+    """One payload, one reading, two values. Sensor.Community's archive does
+    this. Nothing changed between publications, so nothing may be recorded as
+    a change, however many times the archive is re-read."""
+    cur, stations, params, fetch_id, station_id = scene
+
+    r = ing.ingest_observations(cur, stations, params, fetch_id, "t",
+                                [_dup("10.0"), _dup("12.0")])
+    assert r.inserted == 1
+    assert r.duplicates == 1
+
+    rows = history(cur, station_id, params["pm10"])
+    assert len(rows) == 1, "a second row here would be an invented revision"
+    assert rows[0][1] == Decimal("10.0"), "first value published wins"
+
+    # The bug was that re-reading the same bytes appended a revision each time.
+    for _ in range(3):
+        again = ing.ingest_observations(cur, stations, params, fetch_id, "t",
+                                        [_dup("10.0"), _dup("12.0")])
+        assert again.revisions == 0
+    assert len(history(cur, station_id, params["pm10"])) == 1
+
+
+def test_the_kept_reading_says_its_payload_disagreed(scene) -> None:
+    """Keeping one value quietly would hide that the source gave two."""
+    cur, stations, params, fetch_id, station_id = scene
+    ing.ingest_observations(cur, stations, params, fetch_id, "t",
+                            [_dup("10.0"), _dup("12.0")])
+    cur.execute(
+        """select quality_flags from observations
+            where station_id=%s and parameter_id=%s and phenomenon_start=%s""",
+        (station_id, params["pm10"], START),
+    )
+    assert "source_duplicate" in cur.fetchone()[0]
+
+
+def test_an_identical_duplicate_is_not_flagged(scene) -> None:
+    """Repeating the same value says nothing is wrong. Only disagreement does."""
+    cur, stations, params, fetch_id, station_id = scene
+    r = ing.ingest_observations(cur, stations, params, fetch_id, "t",
+                                [_dup("10.0"), _dup("10.0")])
+    assert r.duplicates == 1
+    cur.execute(
+        """select quality_flags from observations
+            where station_id=%s and parameter_id=%s and phenomenon_start=%s""",
+        (station_id, params["pm10"], START),
+    )
+    assert cur.fetchone()[0] == []
+
+
+def test_a_not_a_number_reading_is_refused(scene) -> None:
+    """NaN never equals itself, so one stored row would append a revision on
+    every ingest, forever. It is also not a measurement."""
+    cur, stations, params, fetch_id, station_id = scene
+    r = ing.ingest_observations(cur, stations, params, fetch_id, "t",
+                                [_dup("NaN")])
+    assert r.inserted == 0
+    assert any("NaN" in s for s in r.skipped)
+    assert history(cur, station_id, params["pm10"]) == []

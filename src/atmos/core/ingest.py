@@ -17,7 +17,7 @@ confirm_observation(), which touches two counter columns.
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from datetime import UTC, datetime
 from decimal import Decimal
 
@@ -31,6 +31,9 @@ from atmos.connectors.base import (
 from atmos.core.fetch import FetchResult
 from atmos.core.units import UnknownConversion, convert
 
+# Marks a reading whose payload also carried a different value for it.
+DUPLICATE_FLAG = "source_duplicate"
+
 # What we hold for one reading: (station, parameter, start, end).
 Key = tuple[int, int, datetime, datetime]
 # Its newest revision: (revision, value, unit, revision_kind, previous_value).
@@ -43,6 +46,7 @@ class IngestResult:
     confirmed: int = 0
     revisions: int = 0
     withdrawn: int = 0
+    duplicates: int = 0
     stations_seen: int = 0
     skipped: list[str] = field(default_factory=list)
 
@@ -87,8 +91,9 @@ def upsert_station(cur: psycopg.Cursor, source_id: int, st: ParsedStation) -> in
         """
         insert into stations
           (source_id, source_station_id, name, geom, elevation_m,
-           station_type, area_type, is_indoor, is_mobile, operator, last_seen_at)
-        values (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s, now())
+           station_type, area_type, is_indoor, is_mobile, operator,
+           location_precise, last_seen_at)
+        values (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s, now())
         on conflict (source_id, source_station_id) do update set
           name = excluded.name,
           geom = coalesce(excluded.geom, stations.geom),
@@ -96,11 +101,13 @@ def upsert_station(cur: psycopg.Cursor, source_id: int, st: ParsedStation) -> in
           station_type = excluded.station_type,
           area_type = excluded.area_type,
           operator = coalesce(excluded.operator, stations.operator),
+          location_precise = excluded.location_precise,
           last_seen_at = now()
         returning id
         """,
         (source_id, st.source_station_id, st.name, geom, st.elevation_m,
-         st.station_type, st.area_type, st.is_indoor, st.is_mobile, st.operator),
+         st.station_type, st.area_type, st.is_indoor, st.is_mobile, st.operator,
+         st.location_precise),
     )
     row = cur.fetchone()
     assert row is not None
@@ -185,6 +192,12 @@ def ingest_observations(
             # by withdraw_missing, not by ingesting an empty reading.
             result.skipped.append(f"{o.source_station_id}/{o.parameter_code}: null value")
             continue
+        if not o.value.is_finite():
+            # NaN is not a measurement, and it never compares equal to itself, so
+            # one stored row would append a fresh revision on every ingest.
+            result.skipped.append(
+                f"{o.source_station_id}/{o.parameter_code}: {o.value}")
+            continue
         try:
             value, unit, _factor = convert(o.value, o.unit, o.parameter_code)
         except UnknownConversion as e:
@@ -193,6 +206,8 @@ def ingest_observations(
             continue
         prepared.append(((station_id, param_id, o.phenomenon_start,
                           o.phenomenon_end), o, value, unit))
+
+    prepared = _collapse_duplicates(prepared, result)
 
     if not prepared:
         return result
@@ -235,6 +250,43 @@ def ingest_observations(
     _insert_many(cur, to_insert)
     _flush_confirmations(cur, to_confirm, now)
     return result
+
+
+def _collapse_duplicates(
+    prepared: list[tuple[Key, ParsedObservation, Decimal, str]],
+    result: IngestResult,
+) -> list[tuple[Key, ParsedObservation, Decimal, str]]:
+    """Keep one row per reading when a payload carries the same one twice.
+
+    Sensor.Community's archive does this: one location, one parameter, one
+    timestamp, two rows, two values. Nothing was changed between publications,
+    so it is not a revision. Left alone it became one: whichever row landed first
+    was stored, the next ingest read the other as a change, and the two took
+    turns appending revisions forever.
+
+    First value wins, the same rule the ledger uses everywhere. A kept reading
+    whose twin disagreed is marked, so the ambiguity stays visible rather than
+    being quietly resolved.
+    """
+    seen: dict[Key, int] = {}
+    out: list[tuple[Key, ParsedObservation, Decimal, str]] = []
+    for key, o, value, unit in prepared:
+        pos = seen.get(key)
+        if pos is None:
+            seen[key] = len(out)
+            out.append((key, o, value, unit))
+            continue
+
+        result.duplicates += 1
+        kept_key, kept_o, kept_value, kept_unit = out[pos]
+        differs = kept_value != value or kept_unit != unit
+        if differs and DUPLICATE_FLAG not in kept_o.quality_flags:
+            marked = replace(
+                kept_o,
+                quality_flags=(*kept_o.quality_flags, DUPLICATE_FLAG),
+            )
+            out[pos] = (kept_key, marked, kept_value, kept_unit)
+    return out
 
 
 def _current_state(

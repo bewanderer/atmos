@@ -86,10 +86,18 @@ MIKK = "Metalurski institut Kemal Kapetanovic Zenica"
 TK = "Tuzlanski kanton, Ministarstvo prostornog uredenja i zastite okolice"
 VARES = "Opcina Vares"
 KAKANJ = "Opcina Kakanj"
+MTTIZO_HNK = (
+    "Ministarstvo trgovine, turizma i zastite okolisa "
+    "Hercegovacko-neretvanskog kantona"
+)
 
 # Station metadata from the FHMZ annual reports, which publish what the station
 # pages do not: coordinates, elevation, site classification and the operating
-# body. Extracted from the 2024 report, pages 7 and 8.
+# body. Read from the 2025 report, tables 2 and 3.
+#
+# The 2024 report was checked against it row by row. Every station in both is
+# identical. 2025 adds Saraj Polje and Mostar Kampus, and drops the US embassy
+# station and Kakanj Doboj, a mobile unit that stopped early that year.
 #
 # Site classification matters beyond the map. An industrial station reading
 # higher than an urban background one two kilometres away is expected, and
@@ -140,11 +148,12 @@ REGISTRY: dict[str, tuple[str, float, float, int, str, str, str | None]] = {
     "amsTrnovac":   ("BA0068A", 44.542, 18.689, 299, "background", "urban", FHMZ),
     "amsVares":     ("BA0069A", 44.157, 18.325, 821, "unknown",    "urban", VARES),
     "amsKakanjOpcina": ("BA0070A", 44.123, 18.115, 388, "unknown", "urban", KAKANJ),
+    "amsSPolje":    ("BA0071A", 43.837, 18.342, 512, "unknown",    "urban", ZZJZKS),
+    "amsMostarHNK": ("BA0072A", 43.354, 17.809,  72, "background", "urban", MTTIZO_HNK),
 }
 
-# Two pages have no registry entry: amsSPolje and amsMostarHNK. They are left
-# without coordinates rather than given a guess, which would put a station in
-# the wrong place and quietly corrupt any comparison by distance.
+# A page with no registry entry keeps a null position. Guessing one would put a
+# station in the wrong place and quietly corrupt any comparison by distance.
 
 # Their label -> our code. Unlisted labels are ignored, not guessed at.
 PARAMETERS: dict[str, str] = {

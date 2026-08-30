@@ -129,10 +129,14 @@ def test_station_metadata(conn: FhmzConnector) -> None:
 
 
 def test_station_without_a_registry_entry_gets_no_coordinates(
-    conn: FhmzConnector,
+    conn: FhmzConnector, monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """A guessed position would silently break every comparison by distance."""
-    assert "amsSPolje" not in REGISTRY
+    """A guessed position would silently break every comparison by distance.
+
+    Every page has an entry today. A new station will appear on the site before
+    it appears in a report, so this path has to keep working.
+    """
+    monkeypatch.delitem(REGISTRY, "amsSPolje")
     st = conn.stations(load("amsSPolje"), target("amsSPolje"))[0]
     assert st.name == "Sarajevo Polje"
     assert st.latitude is None
@@ -141,6 +145,26 @@ def test_station_without_a_registry_entry_gets_no_coordinates(
     assert st.operator is None
     # Still useful: we know what it claims to publish.
     assert st.declared_parameters
+
+
+def test_every_page_has_a_position(conn: FhmzConnector) -> None:
+    """Comparable sets match stations by distance. One without a position
+    silently drops out of every comparison."""
+    assert set(REGISTRY) == set(STATIONS)
+
+
+def test_the_two_stations_added_in_2025_are_loaded(conn: FhmzConnector) -> None:
+    """Both postdate the 2024 report, so they read as missing until 2025.
+
+    Saraj Polje is a Novi Grad neighbourhood, not the US embassy station, which
+    left the network in 2025. Mostar Kampus is at the Dzemal Bijedic campus.
+    """
+    st = conn.stations(load("amsSPolje"), target("amsSPolje"))[0]
+    assert (st.latitude, st.longitude, st.elevation_m) == (43.837, 18.342, 512)
+    assert st.operator == ZZJZKS
+
+    assert REGISTRY["amsMostarHNK"][:6] == (
+        "BA0072A", 43.354, 17.809, 72, "background", "urban")
 
 
 def test_registry_positions_are_inside_bosnia() -> None:
