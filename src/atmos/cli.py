@@ -457,5 +457,92 @@ def status(
             typer.echo("  none")
 
 
+@app.command()
+def health(
+    days: int = typer.Option(7, "--days", "-d", help="Window to judge, in days"),
+    source: str = typer.Option(None, "--source", "-s", help="One source slug"),
+    dsn: str = typer.Option(None, "--dsn", envvar="ATMOS_DATABASE_URL"),
+) -> None:
+    """Which stations look reliable, and which do not.
+
+    Reports, it does not decide. A station listed here is still stored and still
+    served. Whether to exclude it is the reader's call, which is the whole point
+    of showing the numbers rather than quietly dropping the station.
+    """
+    import psycopg
+
+    if not dsn:
+        typer.echo("no database DSN, set ATMOS_DATABASE_URL", err=True)
+        raise typer.Exit(2)
+
+    with psycopg.connect(dsn) as db, db.cursor() as cur:
+        cur.execute(
+            """
+            with r as (
+              select o.station_id, o.parameter_id, o.phenomenon_start,
+                     o.phenomenon_end, o.revision, o.value
+                from observations o
+               where o.revision = 1
+                 and o.phenomenon_start >= now() - make_interval(days => %s)
+            )
+            select so.slug, st.name, p.code,
+                   count(*) as readings,
+                   count(*) filter (where r.value = 0) as zeros,
+                   count(f.flag) as flagged,
+                   max(r.phenomenon_start) as last_reading
+              from r
+              join stations st on st.id = r.station_id
+              join sources so on so.id = st.source_id
+              join parameters p on p.id = r.parameter_id
+              left join observation_flags f
+                on f.station_id = r.station_id
+               and f.parameter_id = r.parameter_id
+               and f.phenomenon_start = r.phenomenon_start
+               and f.phenomenon_end = r.phenomenon_end
+               and f.revision = r.revision
+             where (%s::text is null or so.slug = %s::text)
+             group by so.slug, st.name, p.code
+             having count(*) >= 20
+             order by
+               (count(*) filter (where r.value = 0))::numeric / count(*) desc,
+               count(f.flag)::numeric / count(*) desc
+            """,
+            (days, source, source),
+        )
+        rows = cur.fetchall()
+
+    if not rows:
+        typer.echo(f"nothing reported in the last {days} days")
+        return
+
+    def share(part: int, whole: int) -> int:
+        return round(100 * part / whole) if whole else 0
+
+    # A reading of exactly zero is not credible for these, so a station
+    # producing them in quantity is reporting a fault, not clean air.
+    suspect = [r for r in rows if share(r[4], r[3]) >= 5 or share(r[5], r[3]) >= 20]
+    fine = [r for r in rows if r not in suspect]
+
+    typer.echo(f"STATION HEALTH, last {days} days")
+    typer.echo("")
+
+    if suspect:
+        typer.echo("Worth a look")
+        for slug, name, code, readings, zeros, flagged, last in suspect:
+            notes = []
+            if share(zeros, readings) >= 5:
+                notes.append(f"{share(zeros, readings)}% of readings are exactly zero")
+            if share(flagged, readings) >= 20:
+                notes.append(f"{share(flagged, readings)}% flagged")
+            typer.echo(f"  {name} ({slug}) {code}")
+            typer.echo(f"      {', '.join(notes)}, over {readings:,} readings")
+            typer.echo(f"      last reported {last:%Y-%m-%d %H:%M}")
+        typer.echo("")
+
+    typer.echo(f"Reporting normally: {len(fine)} station and parameter pairs")
+    typer.echo("")
+    typer.echo("Listed, not excluded. Every reading above is still stored and served.")
+
+
 if __name__ == "__main__":
     app()

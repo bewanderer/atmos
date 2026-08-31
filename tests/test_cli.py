@@ -227,3 +227,37 @@ def test_status_on_an_empty_database_says_so(tmp_path: Path) -> None:
         conn.execute("select 1")
     result = runner.invoke(app, ["status", "--dsn", DSN])
     assert result.exit_code == 0
+
+
+def test_health_without_a_dsn_exits() -> None:
+    result = runner.invoke(app, ["health"], env={"ATMOS_DATABASE_URL": None})
+    assert result.exit_code == 2
+
+
+@requires_db
+def test_health_reports_stations_without_excluding_them(archived_run: Path) -> None:
+    """The point of the command. It must say plainly that nothing is dropped."""
+    runner.invoke(app, ["ingest", "--connector", "fhmz",
+                        "--path", str(archived_run), "--dsn", DSN])
+    result = runner.invoke(app, ["health", "--dsn", DSN, "--days", "3650"])
+    assert result.exit_code == 0, result.output
+    assert "STATION HEALTH" in result.output
+    assert "still stored and served" in result.output
+
+
+@requires_db
+def test_health_can_be_narrowed_to_one_source(archived_run: Path) -> None:
+    runner.invoke(app, ["ingest", "--connector", "fhmz",
+                        "--path", str(archived_run), "--dsn", DSN])
+    result = runner.invoke(app, ["health", "--dsn", DSN, "--days", "3650",
+                                 "--source", "fhmz"])
+    assert result.exit_code == 0, result.output
+    assert "sensorcommunity" not in result.output
+
+
+@requires_db
+def test_health_with_no_recent_data_says_so() -> None:
+    """A window with nothing in it must not print an empty report as if healthy."""
+    result = runner.invoke(app, ["health", "--dsn", DSN, "--days", "0"])
+    assert result.exit_code == 0, result.output
+    assert "nothing reported" in result.output
