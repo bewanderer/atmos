@@ -1,0 +1,46 @@
+# Postgres and the API. The collector runs on the host under systemd timers
+# rather than here, because a timer that survives a reboot and catches up a
+# missed run is worth more than a container that restarts.
+
+services:
+  db:
+    image: postgis/postgis:16-3.4
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: atmos
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set it in /etc/atmos/atmos.env}
+    volumes:
+      - db:/var/lib/postgresql/data
+    ports:
+      # Localhost only. Nothing reaches Postgres from outside this machine.
+      - "127.0.0.1:5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d atmos"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+    shm_size: 256mb
+
+  api:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      # The API connects as a role with no write grants at all. Read only is a
+      # property of the credential, not of the code.
+      ATMOS_API_DATABASE_URL: ${ATMOS_API_DATABASE_URL:?set it in /etc/atmos/atmos.env}
+      ATMOS_CORS_ORIGINS: ${ATMOS_CORS_ORIGINS:-*}
+    ports:
+      - "127.0.0.1:8000:8000"
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request;urllib.request.urlopen('http://localhost:8000/healthz')\""]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  db:

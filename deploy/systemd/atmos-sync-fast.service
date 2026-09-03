@@ -1,0 +1,24 @@
+[Unit]
+Description=Atmos: collect the short retention feed
+Documentation=https://github.com/bewanderer/atmos
+After=network-online.target docker.service
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=atmos
+WorkingDirectory=/opt/atmos
+EnvironmentFile=/etc/atmos/atmos.env
+# RHMZ RS only. Its feed holds one hour, so this runs far more often than
+# the others and has to stay quick.
+ExecStart=/opt/atmos/.venv/bin/atmos sync --connector rhmzrs --out /var/lib/atmos/archive
+TimeoutStartSec=10min
+
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/atmos
+
+[Install]
+WantedBy=multi-user.target

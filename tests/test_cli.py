@@ -261,3 +261,39 @@ def test_health_with_no_recent_data_says_so() -> None:
     result = runner.invoke(app, ["health", "--dsn", DSN, "--days", "0"])
     assert result.exit_code == 0, result.output
     assert "nothing reported" in result.output
+
+
+def test_sync_without_a_dsn_exits() -> None:
+    result = runner.invoke(app, ["sync"], env={"ATMOS_DATABASE_URL": None})
+    assert result.exit_code == 2
+
+
+def test_sync_rejects_an_unknown_connector() -> None:
+    result = runner.invoke(app, ["sync", "-c", "nosuchsource", "--dsn", "x"])
+    assert result.exit_code == 2
+    assert "unknown connector" in result.output
+
+
+def test_one_broken_source_does_not_cost_another_its_window(monkeypatch) -> None:
+    """Fetching is the half that cannot be recovered.
+
+    A parser that throws, or a site that is down, must never stop the other
+    sources being collected. Their windows close whether or not we succeed here.
+    """
+    import atmos.cli as cli
+
+    seen: list[str] = []
+
+    def fake_collect(conn, slug, out, min_interval):
+        seen.append(slug)
+        if slug == "tuzla":
+            raise RuntimeError("site is down")
+        return Path("nowhere"), 0, 0      # fetched nothing, so nothing to load
+
+    monkeypatch.setattr(cli, "_collect_run", fake_collect)
+    result = runner.invoke(app, ["sync", "--dsn", "postgresql://x/y"])
+
+    assert "tuzla" in seen
+    assert len([s for s in seen if s != "tuzla"]) >= 2, \
+        "the other sources were skipped after one failed"
+    assert result.exit_code == 1, "a failure is still reported"

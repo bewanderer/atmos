@@ -1,0 +1,10 @@
+[Unit]
+Description=Atmos: collect the short retention feed every twenty minutes
+
+[Timer]
+OnCalendar=*-*-* *:07,27,47:00
+Persistent=true
+RandomizedDelaySec=90s
+
+[Install]
+WantedBy=timers.target

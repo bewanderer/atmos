@@ -1,0 +1,26 @@
+[Unit]
+Description=Atmos: collect from every source and load the result
+Documentation=https://github.com/bewanderer/atmos
+After=network-online.target docker.service
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=atmos
+WorkingDirectory=/opt/atmos
+EnvironmentFile=/etc/atmos/atmos.env
+ExecStart=/opt/atmos/.venv/bin/atmos sync --out /var/lib/atmos/archive
+
+# A source that is slow must not hold the timer open forever. Fetching is
+# rate limited on purpose, so this is generous rather than tight.
+TimeoutStartSec=30min
+
+# Nothing here needs to write outside its own archive.
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/atmos
+
+[Install]
+WantedBy=multi-user.target

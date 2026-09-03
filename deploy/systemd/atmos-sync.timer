@@ -1,0 +1,13 @@
+[Unit]
+Description=Atmos: collect the long retention sources every three hours
+
+[Timer]
+OnCalendar=*-*-* 00/3:13:00
+# A missed run is caught up after a reboot rather than silently skipped.
+Persistent=true
+# Every deployment of this project would otherwise hit the sources in the
+# same second. The sites are small and public.
+RandomizedDelaySec=5min
+
+[Install]
+WantedBy=timers.target

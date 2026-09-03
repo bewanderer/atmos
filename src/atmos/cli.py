@@ -49,6 +49,21 @@ def collect(
         typer.echo(f"unknown connector: {connector}", err=True)
         raise typer.Exit(2)
 
+    dest, ok_count, total = _collect_run(conn, connector, out, min_interval)
+    typer.echo(f"\n{ok_count}/{total} ok -> {dest}")
+    # A run where nothing succeeded is a failure worth surfacing to CI.
+    if ok_count == 0:
+        raise typer.Exit(1)
+
+
+def _collect_run(
+    conn: Connector, connector: str, out: pathlib.Path, min_interval: float
+) -> tuple[pathlib.Path, int, int]:
+    """Fetch every target and archive the bytes. Returns where, and how many.
+
+    Split out of the command so a scheduled run can collect and load in one go
+    rather than shelling out to itself.
+    """
     run_started = datetime.now(UTC)
     stamp = run_started.strftime("%Y-%m-%dT%H%M%SZ")
     dest = out / connector / run_started.strftime("%Y/%m/%d") / stamp
@@ -82,11 +97,7 @@ def collect(
         "fetches": records,
     }
     (dest / "manifest.json").write_text(json.dumps(manifest, indent=1), encoding="utf-8")
-
-    typer.echo(f"\n{ok_count}/{len(records)} ok -> {dest}")
-    # A run where nothing succeeded is a failure worth surfacing to CI.
-    if ok_count == 0:
-        raise typer.Exit(1)
+    return dest, ok_count, len(records)
 
 
 @app.command()
@@ -542,6 +553,76 @@ def health(
     typer.echo(f"Reporting normally: {len(fine)} station and parameter pairs")
     typer.echo("")
     typer.echo("Listed, not excluded. Every reading above is still stored and served.")
+
+
+@app.command()
+def sync(
+    connector: list[str] = typer.Option(
+        None, "--connector", "-c",
+        help="Repeatable. Defaults to every live connector",
+    ),
+    out: pathlib.Path = typer.Option(pathlib.Path("archive"), "--out", "-o"),
+    dsn: str = typer.Option(None, "--dsn", envvar="ATMOS_DATABASE_URL"),
+    min_interval: float = typer.Option(2.0, "--min-interval"),
+) -> None:
+    """Collect from every source and load the result, in one command.
+
+    This is what a timer runs. Collecting and loading were separate commands and
+    the database drifted four days behind while collection carried on fine,
+    because keeping up meant remembering to run several things in order.
+
+    A source that fails does not stop the others. Fetching is the part that
+    cannot be recovered, so one broken parser must never cost another source its
+    window.
+    """
+    slugs = list(connector) if connector else [
+        s for s in CONNECTORS if s != "sensorcommunity-archive"
+    ]
+    unknown = [s for s in slugs if s not in CONNECTORS]
+    if unknown:
+        typer.echo(f"unknown connector(s): {', '.join(unknown)}", err=True)
+        raise typer.Exit(2)
+    if not dsn:
+        typer.echo("no database DSN, set ATMOS_DATABASE_URL", err=True)
+        raise typer.Exit(2)
+
+    collected: list[str] = []
+    failed: list[str] = []
+
+    for slug in slugs:
+        conn = CONNECTORS[slug]
+        typer.echo(f"\n=== {slug} ===")
+        try:
+            dest, ok_count, total = _collect_run(conn, slug, out, min_interval)
+        except Exception as e:  # noqa: BLE001
+            typer.echo(f"  collect failed: {type(e).__name__}: {e}", err=True)
+            failed.append(slug)
+            continue
+
+        typer.echo(f"  fetched {ok_count}/{total} -> {dest}")
+        if ok_count == 0:
+            typer.echo("  nothing fetched, not loading", err=True)
+            failed.append(slug)
+            continue
+
+        try:
+            ingest(connector=slug, path=dest, dsn=dsn, reprocess=False)
+            collected.append(slug)
+        except typer.Exit as e:
+            if e.exit_code:
+                typer.echo(f"  load failed with exit {e.exit_code}", err=True)
+                failed.append(slug)
+            else:
+                collected.append(slug)
+        except Exception as e:  # noqa: BLE001
+            # The bytes are archived either way, so this is recoverable.
+            typer.echo(f"  load failed: {type(e).__name__}: {e}", err=True)
+            failed.append(slug)
+
+    typer.echo(f"\nloaded: {', '.join(collected) or 'none'}")
+    if failed:
+        typer.echo(f"failed: {', '.join(failed)}", err=True)
+        raise typer.Exit(1)
 
 
 if __name__ == "__main__":
