@@ -7,9 +7,14 @@ name: collect
 
 on:
   schedule:
-    # RHMZ RS holds one hour at a time, so it has to be hourly.
-    - cron: "7 * * * *"
-    # The HTML sources keep days, so three hours leaves plenty of margin.
+    # RHMZ RS holds one hour at a time, so a skipped run loses that hour for
+    # good. Scheduled workflows are not a reliable clock: GitHub delays them
+    # under load and drops them without failing anything, so once an hour is one
+    # chance an hour. Three times an hour costs seconds and needs two misses in
+    # a row before anything is lost.
+    - cron: "7,27,47 * * * *"
+    # The HTML sources keep days per fetch, so three hours leaves plenty of
+    # margin and there is nothing to gain from asking more often.
     - cron: "13 */3 * * *"
   workflow_dispatch:
     inputs:
@@ -33,6 +38,7 @@ jobs:
           elif [ "${{ github.event.schedule }}" = "13 */3 * * *" ]; then
             LIST='["fhmz","tuzla","sensorcommunity"]'
           else
+            # Any other schedule is one of the RHMZ slots.
             LIST='["rhmzrs"]'
           fi
           echo "connectors=$LIST" >> "$GITHUB_OUTPUT"

@@ -1,0 +1,75 @@
+name: heartbeat
+
+# A collector that stops is silent. A run that fails turns the workflow red, but
+# a run that never happens produces nothing at all, and scheduled workflows do
+# get dropped. Four days of RHMZ went missing before anyone thought to look.
+#
+# So something has to assert that collection happened rather than wait to be
+# told it did not. This checks the archive itself, which is the thing we
+# actually care about, rather than the run history.
+#
+# A failure here emails the repository owner, which is the whole point.
+
+on:
+  schedule:
+    - cron: "41 */6 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+      # RHMZ runs three times an hour and keeps only the current hour, so a
+      # six hour silence is already a real loss. The others keep days.
+      MAX_SILENCE_HOURS: 6
+    steps:
+      - name: Newest archive asset
+        id: newest
+        run: |
+          TAG="archive-$(date -u +%Y-%m)"
+          if ! gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            # On the first day of a month the release may not exist yet, which
+            # is only alarming once the day is old enough to have had runs.
+            if [ "$(date -u +%d)" = "01" ] && [ "$(date -u +%H)" -lt 6 ]; then
+              echo "no release yet, but it is early on the first of the month"
+              exit 0
+            fi
+            echo "::error::no archive release $TAG and the month is underway"
+            exit 1
+          fi
+          LATEST=$(gh api "repos/$GITHUB_REPOSITORY/releases/tags/$TAG" \
+            --jq '[.assets[].created_at] | max')
+          echo "latest=$LATEST" >> "$GITHUB_OUTPUT"
+          echo "newest asset: $LATEST"
+
+      - name: Fail if collection has gone quiet
+        run: |
+          LATEST="${{ steps.newest.outputs.latest }}"
+          if [ -z "$LATEST" ] || [ "$LATEST" = "null" ]; then
+            echo "::error::archive release exists but holds no assets"
+            exit 1
+          fi
+          AGE=$(( ( $(date -u +%s) - $(date -u -d "$LATEST" +%s) ) / 3600 ))
+          echo "newest archive asset is ${AGE}h old"
+          if [ "$AGE" -gt "$MAX_SILENCE_HOURS" ]; then
+            echo "::error::no archive written for ${AGE}h, limit is ${MAX_SILENCE_HOURS}h."
+            echo "::error::Sources discard data. RHMZ RS keeps one hour, so that window is gone."
+            exit 1
+          fi
+          echo "collection is current"
+
+      - name: Summary
+        if: always()
+        run: |
+          {
+            echo "### Collection heartbeat"
+            echo ""
+            echo "Newest archive asset: ${{ steps.newest.outputs.latest }}"
+            echo ""
+            echo "Limit: ${MAX_SILENCE_HOURS}h."
+          } >> "$GITHUB_STEP_SUMMARY"

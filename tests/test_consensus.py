@@ -516,3 +516,26 @@ def test_the_aggregation_method_is_stated(world) -> None:
         (WHEN, LATER),
     )
     assert cur.fetchone()[0] == "median"
+
+
+def test_a_reading_still_counts_after_its_station_goes_quiet(world) -> None:
+    """Liveness is not eligibility.
+
+    Station status is computed from now() minus the last observation, so it
+    decays with the calendar. Filtering historical readings by it made the whole
+    archive vanish from consensus three days after collection paused, and meant
+    a published figure would not reproduce next month.
+    """
+    cur, ids, params, fetch_id = world
+    put(cur, ids, params, fetch_id, {"s1": "10", "s2": "40", "s3": "46"})
+    assert sets(cur)[ids["s2"]][0] == 3
+
+    # Time passes and every station goes stale, then dormant.
+    for status in ("stale", "dormant", "campaign_ended"):
+        cur.execute(
+            "update station_status set status=%s where station_id = any(%s)",
+            (status, list(ids.values())),
+        )
+        assert sets(cur)[ids["s2"]][0] == 3, (
+            f"readings disappeared once stations were {status}"
+        )

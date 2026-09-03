@@ -7,14 +7,17 @@ in one request, because bulk access is a download, not an API call.
 from __future__ import annotations
 
 from datetime import datetime, timedelta
-from typing import Annotated
+from typing import Annotated, Any
 
 from fastapi import APIRouter, HTTPException, Query
 
 from atmos.api import db
 from atmos.api.models import (
+    AirQuality,
     ConsensusSet,
+    CurrentConditions,
     Divergence,
+    IndexScale,
     Meta,
     Observation,
     Parameter,
@@ -304,3 +307,138 @@ async def station_health(
         (days, source, source, limit),
     )
     return [StationHealth(**r) for r in rows]
+
+
+# One row per band, joined in wherever an index is returned.
+_AQI_SELECT = """
+    select a.band, l.code as band_code, l.name as band_name,
+           a.driver, a.driver_value, p.canonical_unit as driver_unit,
+           a.observed_at, a.pollutants_used, a.missing, a.complete
+      from station_aqi(%s, %s) a
+      join aqi_scales s on s.code = 'eaqi'
+      join aqi_band_labels l on l.scale_id = s.id and l.band = a.band
+      join parameters p on p.code = a.driver
+"""
+
+# The scale has five pollutants. Stated rather than counted, so a caller can
+# read "3 of 5" without a second request.
+SCALE_POLLUTANTS = 5
+
+
+def _air_quality(station_id: int, row: dict[str, Any]) -> AirQuality:
+    return AirQuality(
+        station_id=station_id,
+        band=row["band"], band_code=row["band_code"], band_name=row["band_name"],
+        driver=row["driver"], driver_value=row["driver_value"],
+        driver_unit=row["driver_unit"], observed_at=row["observed_at"],
+        pollutants_used=row["pollutants_used"],
+        pollutants_total=SCALE_POLLUTANTS,
+        missing=list(row["missing"] or []),
+        complete=row["complete"],
+        basis="complete" if row["complete"] else "floor",
+    )
+
+
+@router.get("/index-scale", response_model=IndexScale,
+            summary="Which index we compute, and where its numbers came from")
+async def index_scale() -> IndexScale:
+    """Cite this beside any figure taken from /air-quality."""
+    row = await db.fetch_one(
+        """select code, name, revision, citation, verified_on
+             from aqi_scales where code = 'eaqi'"""
+    )
+    if row is None:
+        raise HTTPException(500, "no index scale configured")
+    return IndexScale(**row)
+
+
+@router.get("/stations/{station_id}/air-quality", response_model=AirQuality,
+            summary="The index for one station and hour")
+async def air_quality(
+    station_id: int,
+    at: Annotated[
+        datetime | None,
+        Query(description="Hour to read. Defaults to the latest"),
+    ] = None,
+) -> AirQuality:
+    """404 where neither PM2.5 nor PM10 was measured.
+
+    That is the honest answer, not a gap: the index takes the worst of five
+    pollutants and particulates drive it nearly everywhere here, so a figure
+    without them would carry almost nothing.
+    """
+    if at is None:
+        latest = await db.fetch_one(
+            """select max(last_observation_at) as at
+                 from station_status where station_id = %s""",
+            (station_id,),
+        )
+        if latest is None or latest["at"] is None:
+            raise HTTPException(404, "station has never reported")
+        at = latest["at"]
+
+    row = await db.fetch_one(_AQI_SELECT, (station_id, at))
+    if row is None:
+        raise HTTPException(404, "no index for that station and hour")
+    return _air_quality(station_id, row)
+
+
+@router.get("/current", response_model=list[CurrentConditions],
+            summary="Latest reading and index for every station")
+async def current(
+    source: Annotated[str | None, Query(description="Source slug")] = None,
+    limit: Annotated[int, Query(ge=1, le=MAX_ROWS)] = DEFAULT_ROWS,
+) -> list[CurrentConditions]:
+    """What a front page needs in one request.
+
+    Each station is read at its own latest hour, so a station that stopped
+    reporting yesterday shows yesterday's figure with yesterday's timestamp
+    rather than being quietly dropped or shown as current.
+    """
+    rows = await db.fetch_all(
+        """
+        with latest as (
+          select ss.station_id, max(ss.last_observation_at) as at
+            from station_status ss
+           where ss.last_observation_at is not null
+           group by ss.station_id
+        )
+        select st.id as station_id, st.name as station, so.slug as source,
+               st.station_type, st.area_type,
+               st_y(st.geom::geometry) as latitude,
+               st_x(st.geom::geometry) as longitude,
+               l.at as observed_at,
+               (select jsonb_object_agg(p.code, o.value)
+                  from observations o join parameters p on p.id = o.parameter_id
+                 where o.station_id = st.id and o.revision = 1
+                   and o.value is not null
+                   and o.phenomenon_start = date_trunc('hour', l.at)) as values,
+               (select jsonb_object_agg(p.code, p.canonical_unit)
+                  from observations o join parameters p on p.id = o.parameter_id
+                 where o.station_id = st.id and o.revision = 1
+                   and o.phenomenon_start = date_trunc('hour', l.at)) as units
+          from latest l
+          join stations st on st.id = l.station_id
+          join sources so on so.id = st.source_id
+         where (%s::text is null or so.slug = %s::text)
+         order by st.name
+         limit %s
+        """,
+        (source, source, limit),
+    )
+
+    out: list[CurrentConditions] = []
+    for r in rows:
+        aq = None
+        if r["observed_at"] is not None:
+            hit = await db.fetch_one(_AQI_SELECT, (r["station_id"], r["observed_at"]))
+            if hit is not None:
+                aq = _air_quality(r["station_id"], hit)
+        out.append(CurrentConditions(
+            station_id=r["station_id"], station=r["station"], source=r["source"],
+            station_type=r["station_type"], area_type=r["area_type"],
+            latitude=r["latitude"], longitude=r["longitude"],
+            observed_at=r["observed_at"], air_quality=aq,
+            values=r["values"] or {}, units=r["units"] or {},
+        ))
+    return out

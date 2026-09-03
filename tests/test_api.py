@@ -195,3 +195,58 @@ def test_the_api_cannot_write(client) -> None:
     """Read only by construction, not by discipline."""
     assert client.post("/v1/stations").status_code in (404, 405)
     assert client.delete("/v1/stations/1").status_code in (404, 405)
+
+
+def test_the_index_scale_is_citable(client) -> None:
+    """A figure whose scale cannot be traced should not be quoted."""
+    s = client.get("/v1/index-scale").json()
+    assert s["code"] == "eaqi"
+    assert "2024" in s["revision"]
+    assert "Table 5.2" in s["citation"]
+    assert s["verified_on"]
+
+
+def test_current_gives_a_front_page_in_one_request(client) -> None:
+    rows = client.get("/v1/current", params={"limit": 60}).json()
+    assert rows
+    for r in rows:
+        assert r["station"] and r["source"]
+        assert "values" in r and "units" in r
+
+
+def test_an_index_says_how_many_pollutants_it_rests_on(client) -> None:
+    """Missing pollutants can only make the true value worse, so a partial
+    index has to be marked as a floor rather than an estimate."""
+    rows = client.get("/v1/current", params={"limit": 60}).json()
+    graded = [r for r in rows if r["air_quality"]]
+    assert graded, "some station should have an index"
+    for r in graded:
+        aq = r["air_quality"]
+        assert 1 <= aq["band"] <= 6
+        assert aq["pollutants_total"] == 5
+        assert aq["basis"] == ("complete" if aq["complete"] else "floor")
+        assert (len(aq["missing"]) == 0) == aq["complete"]
+        assert aq["driver"] in {"pm25", "pm10", "no2", "o3", "so2"}, \
+            "CO and H2S are not EAQI pollutants and must never drive it"
+
+
+def test_a_station_without_particulates_gets_no_index(client) -> None:
+    """Absent, not approximate."""
+    rows = client.get("/v1/current", params={"limit": 60}).json()
+    ungraded = [r for r in rows if not r["air_quality"] and r["values"]]
+    for r in ungraded:
+        assert "pm10" not in r["values"] and "pm25" not in r["values"], \
+            f"{r['station']} has particulates but no index"
+
+
+def test_one_station_index_can_be_asked_for_directly(client) -> None:
+    rows = client.get("/v1/current", params={"limit": 60}).json()
+    graded = [r for r in rows if r["air_quality"]][0]
+    r = client.get(f"/v1/stations/{graded['station_id']}/air-quality")
+    assert r.status_code == 200
+    assert r.json()["band"] == graded["air_quality"]["band"]
+
+
+def test_asking_for_an_index_that_does_not_exist_is_a_404(client) -> None:
+    r = client.get("/v1/stations/999999999/air-quality")
+    assert r.status_code == 404

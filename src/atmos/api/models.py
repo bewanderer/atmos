@@ -15,7 +15,7 @@ from.
 
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import date, datetime
 from decimal import Decimal
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -181,3 +181,65 @@ class Meta(Model):
         "as questionable, never as removed, and source selection is the reader's."
     )
     sources: list[Source] = []
+
+
+class IndexScale(Model):
+    """Which scale a figure was computed on, and where its numbers came from."""
+
+    code: str
+    name: str
+    revision: str
+    citation: str
+    verified_on: date
+
+
+class AirQuality(Model):
+    """The index for one station and hour.
+
+    Absent rather than approximate. Where neither PM2.5 nor PM10 was measured
+    there is no figure at all, because particulates drive the index nearly
+    everywhere here and one without them would carry almost nothing.
+    """
+
+    station_id: int
+    band: int = Field(description="1 good to 6 extremely poor")
+    band_code: str = Field(description="Stable key: good, fair, moderate and so on")
+    band_name: str = Field(description="The publishing body's own wording")
+    driver: str = Field(description="The pollutant that set the band")
+    driver_value: Decimal
+    driver_unit: str
+    observed_at: datetime
+    pollutants_used: int
+    pollutants_total: int
+    missing: list[str] = Field(
+        description="Scale pollutants this station did not report that hour"
+    )
+    complete: bool
+    scale: str = "eaqi"
+    basis: str = Field(
+        description=(
+            "complete when every pollutant of the scale reported. floor when "
+            "some are missing: the index takes the worst pollutant, so an "
+            "absent one can only make the true value worse, never better"
+        )
+    )
+
+
+class CurrentConditions(Model):
+    """A station's latest reading and index, for a list or a map."""
+
+    station_id: int
+    station: str
+    source: str
+    station_type: str
+    area_type: str
+    latitude: float | None = None
+    longitude: float | None = None
+    observed_at: datetime | None = None
+    air_quality: AirQuality | None = Field(
+        default=None, description="Absent when the station published no particulates"
+    )
+    values: dict[str, Decimal] = Field(
+        default_factory=dict, description="Every pollutant that hour, index or not"
+    )
+    units: dict[str, str] = {}
